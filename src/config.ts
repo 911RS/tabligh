@@ -52,14 +52,18 @@ export const env = {
   },
   retentionDays: Number(process.env.RETENTION_DAYS ?? '7'),
   // Hours to keep uploaded videos on MinIO before `prune` removes them
-  // (must outlast Buffer's ingest of the media).
-  minioRetentionHours: Number(process.env.MINIO_RETENTION_HOURS ?? '48'),
+  // (must outlast Buffer's ingest of the media). 24h is the safe default.
+  minioRetentionHours: Number(process.env.MINIO_RETENTION_HOURS ?? '24'),
   // If a surah has this many ayahs or fewer, render the WHOLE surah regardless
   // of the requested range. Set to 0 to disable.
   fullSurahMaxAyahs: Number(process.env.FULL_SURAH_MAX_AYAHS ?? '7'),
   // `random` mode: pick a consecutive run of this many ayahs (from long surahs).
   randomMinAyahs: Number(process.env.RANDOM_MIN_AYAHS ?? '3'),
   randomMaxAyahs: Number(process.env.RANDOM_MAX_AYAHS ?? '7'),
+  // Keep MinIO objects ~24h after publish so Buffer can ingest, then `prune`
+  // removes them. Local assets are always deleted immediately after publish.
+  // Flip to 'true' only if you want the (risky) instant MinIO delete.
+  deleteMinioOnPublish: (process.env.DELETE_MINIO_ON_PUBLISH ?? 'false') === 'true',
 };
 
 /** Load a job from a JSON file path. */

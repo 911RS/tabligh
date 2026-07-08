@@ -70,9 +70,17 @@ export async function publishReel(reel: ReelJob, mp4Path: string, opts: PublishO
     thumbObject: thumbUp.objectName,
   });
 
+  // Immediate cleanup after a successful post: local work dir + (optionally) the
+  // MinIO objects. If TikTok posts come out empty, set DELETE_MINIO_ON_PUBLISH=false
+  // so Buffer has time to ingest and `prune` clears them later.
+  if (env.deleteMinioOnPublish) {
+    await deleteObject(video.objectName);
+    await deleteObject(thumbUp.objectName);
+    log.ok('Deleted MinIO video + thumbnail (immediate post-publish cleanup)');
+  }
   if (opts.cleanupLocal !== false) {
     await rm(reel.workDir, { recursive: true, force: true });
-    log.ok('Removed local work dir (media lives on MinIO until prune)');
+    log.ok('Removed local work dir');
   }
   return postIds;
 }
