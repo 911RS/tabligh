@@ -55,9 +55,10 @@ export async function renderFrames(
   const framesDir = join(reel.workDir, 'frames');
   await mkdir(framesDir, { recursive: true });
 
-  const [arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
+  const [arefRegular, arefBold, reemBase64, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
     readFile(FONT('ArefRuqaa-Regular.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('ArefRuqaa-Bold.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('ReemKufiFun.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Regular.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Medium.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Italic.ttf')).then((b) => b.toString('base64')),
@@ -85,6 +86,7 @@ export async function renderFrames(
   const html = buildScene({
     arefRegular,
     arefBold,
+    reemBase64,
     ubuntuRegular,
     ubuntuMedium,
     ubuntuItalic,
@@ -99,6 +101,8 @@ export async function renderFrames(
     outroMs: OUTRO_MS,
     logoDataUri,
     handle: opts.handle,
+    showWatermark: env.watermarkEnabled,
+    outroText: env.outroText,
     seed: opts.seed,
   });
 

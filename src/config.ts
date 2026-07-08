@@ -60,6 +60,17 @@ export const env = {
   // `random` mode: pick a consecutive run of this many ayahs (from long surahs).
   randomMinAyahs: Number(process.env.RANDOM_MIN_AYAHS ?? '5'),
   randomMaxAyahs: Number(process.env.RANDOM_MAX_AYAHS ?? '10'),
+  // HTTP server (serve mode): port + secret for the manual /trigger endpoint.
+  port: Number(process.env.PORT ?? '3000'),
+  triggerToken: process.env.TRIGGER_TOKEN ?? '',
+  // Show the top-right corner watermark (logo/handle). The outro sign-off is
+  // always shown regardless of this.
+  watermarkEnabled: (process.env.WATERMARK_ENABLED ?? 'true') === 'true',
+  // Outro sign-off text (ṣalawāt), shown centered on the fade-to-black — under
+  // the logo when a logo is present, otherwise on its own.
+  outroText:
+    process.env.OUTRO_TEXT ??
+    'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين',
   // Keep MinIO objects ~24h after publish so Buffer can ingest, then `prune`
   // removes them. Local assets are always deleted immediately after publish.
   // Flip to 'true' only if you want the (risky) instant MinIO delete.

@@ -18,6 +18,8 @@ export interface SceneAyah {
 export interface SceneParams {
   arefRegular: string;
   arefBold: string;
+  /** Reem Kufi Fun — used for the outro ṣalawāt sign-off. */
+  reemBase64: string;
   ubuntuRegular: string;
   ubuntuMedium: string;
   ubuntuItalic: string;
@@ -32,6 +34,10 @@ export interface SceneParams {
   outroMs: number;
   logoDataUri?: string;
   handle?: string;
+  /** Show the top-right corner watermark (outro sign-off is always shown). */
+  showWatermark: boolean;
+  /** Outro sign-off text, used when there is no logo. */
+  outroText?: string;
   seed: number;
 }
 
@@ -69,19 +75,25 @@ export function buildScene(p: SceneParams): string {
     })
     .join('');
 
-  const watermark = p.logoDataUri
-    ? `<img class="wm-logo" src="${p.logoDataUri}" alt=""/>`
-    : p.handle
-      ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
-      : '';
+  const watermark = !p.showWatermark
+    ? ''
+    : p.logoDataUri
+      ? `<img class="wm-logo" src="${p.logoDataUri}" alt=""/>`
+      : p.handle
+        ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
+        : '';
 
   const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length };
-  const endLogo = p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '';
+  // Outro card: logo (if present) stacked above the ṣalawāt text; both centered.
+  const endCardInner =
+    (p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
+    (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '');
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
 <style>
 @font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefRegular}) format('truetype');font-weight:400;font-display:block}
 @font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefBold}) format('truetype');font-weight:700;font-display:block}
+@font-face{font-family:'Kufi';src:url(data:font/ttf;base64,${p.reemBase64}) format('truetype');font-weight:400 700;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuRegular}) format('truetype');font-weight:400;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuMedium}) format('truetype');font-weight:500;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuItalic}) format('truetype');font-weight:400;font-style:italic;font-display:block}
@@ -90,8 +102,8 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .bg{position:absolute;inset:-6%;${bgLayer}will-change:transform}
 /* Strong cinematic overlay so white text stays readable on any photo */
 .scrim{position:absolute;inset:0;background:
-  radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.12) 0%, rgba(4,7,10,.55) 60%, rgba(3,5,8,.80) 100%),
-  linear-gradient(180deg, rgba(3,5,8,.72) 0%, rgba(3,5,8,.22) 22%, rgba(3,5,8,.30) 58%, rgba(3,5,8,.82) 100%)}
+  radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.30) 0%, rgba(4,7,10,.62) 58%, rgba(3,5,8,.86) 100%),
+  linear-gradient(180deg, rgba(3,5,8,.78) 0%, rgba(3,5,8,.34) 22%, rgba(3,5,8,.44) 58%, rgba(3,5,8,.86) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);will-change:transform,opacity}
 .ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
@@ -125,8 +137,8 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .footer{position:absolute;bottom:0;left:0;right:0;text-align:center;line-height:1.5;
   font-family:'Ubuntu';font-weight:500;font-size:30px;color:rgba(255,255,255,.82);
   text-shadow:0 2px 10px rgba(0,0,0,.7)}
-.footer .lbl{display:inline-flex;align-items:center;gap:10px;opacity:.85}
-.footer .mic{width:28px;height:28px}
+.footer .mic{display:block;width:36px;height:36px;margin:0 auto 10px}
+.footer .lbl{display:block;opacity:.85}
 .footer b{display:block;font-weight:700;font-size:38px;color:#fff;margin-top:6px}
 /* Watermark PNG top-right (outside safe zone, above TikTok buttons) */
 .wm{position:absolute;top:130px;right:44px;display:flex;align-items:center;z-index:5}
@@ -134,8 +146,11 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .wm-handle{font-family:'Ubuntu';font-weight:600;letter-spacing:2px;font-size:28px;color:rgba(255,255,255,.9);text-shadow:0 2px 10px rgba(0,0,0,.7)}
 /* Outro: fade whole video to black + centered logo sign-off */
 .veil{position:absolute;inset:0;background:#000;opacity:0;z-index:20;pointer-events:none}
-.endcard{position:absolute;inset:0;display:grid;place-items:center;opacity:0;z-index:21;pointer-events:none}
-.end-logo{width:340px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
+.endcard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:44px;opacity:0;z-index:21;pointer-events:none}
+.end-logo{width:300px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
+.end-text{font-family:'Kufi';font-weight:600;font-size:50px;line-height:1.9;color:#fff;text-align:center;
+  direction:rtl;max-width:820px;padding:0 70px;filter:drop-shadow(0 3px 18px rgba(0,0,0,.7))}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
@@ -150,13 +165,14 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
     </div>
     <div class="stage" id="stage">${ayahLayers}</div>
     <div class="footer">
-      <span class="lbl"><svg class="mic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>Recited by</span>
+      <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+      <span class="lbl">Recited by</span>
       <b>${esc(p.reciterName)}</b>
     </div>
   </div>
   <div class="wm">${watermark}</div>
   <div class="veil" id="veil"></div>
-  <div class="endcard" id="endcard">${endLogo}</div>
+  <div class="endcard" id="endcard">${endCardInner}</div>
 <script>
 const CFG = ${JSON.stringify(cfg)};
 const F = 380;            // sequential ayah fade in/out (no cross-ayah overlap)

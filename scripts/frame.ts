@@ -25,8 +25,8 @@ function words(arabic: string, s: number, e: number): SceneAyah['words'] {
 const reel = JSON.parse(await readFile(irPath, 'utf8')) as ReelJob;
 const F = (f: string) => join(process.cwd(), 'assets/fonts', f);
 const b64 = (f: string) => readFile(F(f)).then((b) => b.toString('base64'));
-const [arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
-  b64('ArefRuqaa-Regular.ttf'), b64('ArefRuqaa-Bold.ttf'),
+const [arefRegular, arefBold, reemBase64, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
+  b64('ArefRuqaa-Regular.ttf'), b64('ArefRuqaa-Bold.ttf'), b64('ReemKufiFun.ttf'),
   b64('Ubuntu-Regular.ttf'), b64('Ubuntu-Medium.ttf'), b64('Ubuntu-Italic.ttf'),
 ]);
 
@@ -36,14 +36,17 @@ const ayahs: SceneAyah[] = reel.ayahs.map((a) => ({
 }));
 
 const background = await resolveBackground(kw, 'auto', 7);
+const logoB64 = await readFile(join(process.cwd(), 'assets/logo.png')).then((b) => b.toString('base64')).catch(() => '');
 const html = buildScene({
-  arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic, background,
+  arefRegular, arefBold, reemBase64, ubuntuRegular, ubuntuMedium, ubuntuItalic, background,
   surahName: reel.surahName, surahEnglishName: reel.surahEnglishName,
   ayahRangeLabel: reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`,
   reciterName: reel.reciterName || 'Reciter', showBasmala: reel.hasBasmala, ayahs,
   durationMs: reel.durationMs, outroMs: 2000,
-  logoDataUri: 'data:image/png;base64,' + (await readFile(join(process.cwd(), 'assets/logo.png')).then((b) => b.toString('base64')).catch(() => '')),
-  handle: '@eQurany', seed: 7,
+  logoDataUri: logoB64 ? 'data:image/png;base64,' + logoB64 : undefined,
+  handle: '@eQurany', showWatermark: false,
+  outroText: 'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين',
+  seed: 7,
 });
 
 const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });
