@@ -17,6 +17,28 @@ async function exists(p: string): Promise<boolean> {
   try { await access(p); return true; } catch { return false; }
 }
 
+// Combining marks / tatweel — removed only for weighting word length.
+const MARKS = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
+
+/**
+ * Approximate per-word timing by splitting the ayah's exact [start,end] across
+ * its words, weighted by base-letter count. Not forced-alignment, but a cheap,
+ * dependency-free karaoke sync that reads well for short passages.
+ */
+function computeWordTimings(arabic: string, startMs: number, endMs: number): SceneAyah['words'] {
+  const words = arabic.trim().split(/\s+/).filter(Boolean);
+  const weights = words.map((w) => Math.max(1, w.replace(MARKS, '').length));
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  const span = endMs - startMs;
+  let cursor = startMs;
+  return words.map((t, i) => {
+    const dur = (span * weights[i]) / total;
+    const s = cursor;
+    cursor += dur;
+    return { t, s: Math.round(s), e: Math.round(cursor) };
+  });
+}
+
 export interface FrameRenderOpts {
   background: Background;
   handle?: string;
@@ -31,11 +53,11 @@ export async function renderFrames(
   const framesDir = join(reel.workDir, 'frames');
   await mkdir(framesDir, { recursive: true });
 
-  const [reemBase64, ubuntuRegular, ubuntuMedium, ubuntuBold, ubuntuItalic] = await Promise.all([
-    readFile(FONT('ReemKufiFun.ttf')).then((b) => b.toString('base64')),
+  const [arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
+    readFile(FONT('ArefRuqaa-Regular.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('ArefRuqaa-Bold.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Regular.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Medium.ttf')).then((b) => b.toString('base64')),
-    readFile(FONT('Ubuntu-Bold.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Italic.ttf')).then((b) => b.toString('base64')),
   ]);
 
@@ -46,7 +68,7 @@ export async function renderFrames(
     : undefined;
 
   const sceneAyahs: SceneAyah[] = reel.ayahs.map((a) => ({
-    arabic: a.arabic,
+    words: computeWordTimings(a.arabic, a.startMs, a.endMs),
     translation: a.translation,
     numArabic: toArabicDigits(a.ayah),
     startMs: a.startMs,
@@ -59,15 +81,16 @@ export async function renderFrames(
       : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`;
 
   const html = buildScene({
-    reemBase64,
+    arefRegular,
+    arefBold,
     ubuntuRegular,
     ubuntuMedium,
-    ubuntuBold,
     ubuntuItalic,
     background: opts.background,
     surahName: reel.surahName,
     surahEnglishName: reel.surahEnglishName,
     ayahRangeLabel: rangeLabel,
+    reciterName: reel.reciterName,
     showBasmala: reel.hasBasmala,
     ayahs: sceneAyahs,
     durationMs: reel.durationMs,

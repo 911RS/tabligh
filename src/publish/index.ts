@@ -7,23 +7,28 @@ import { extractThumbnail } from '../video/thumbnail.js';
 import { uploadFile, deleteObject, listStaleObjects } from './minio.js';
 import { publishToTiktok, type PostMode } from './buffer.js';
 import { appendEntry } from './ledger.js';
+import type { PhotoCredit } from '../render/background.js';
 
-/** Default caption: surah header + ayah range + a few tasteful hashtags. */
-export function buildCaption(reel: ReelJob): string {
+/** Default caption: surah + ayah range + reciter + photo credit + hashtags. */
+export function buildCaption(reel: ReelJob, credit?: PhotoCredit): string {
   const range =
     reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}-${reel.ayahTo}`;
   const tag = reel.surahEnglishName.replace(/[^A-Za-z]/g, '');
-  return [
-    `${reel.surahEnglishName} — ${range}`,
-    '',
-    `#Quran #Islam #Recitation #Quranic #${tag} #fyp`,
-  ].join('\n');
+  const lines = [
+    `📖 Surah ${reel.surahEnglishName} — ${range}`,
+    `🎙️ Recited by ${reel.reciterName}`,
+  ];
+  if (credit) lines.push(`📷 Background: photo by ${credit.author} on ${credit.source} (${credit.url})`);
+  lines.push('');
+  lines.push(`#Quran #Islam #Recitation #Quranic #${tag} #QuranRecitation #Muslim #Deen #fyp`);
+  return lines.join('\n');
 }
 
 export interface PublishOpts {
   mode?: PostMode; // default addToQueue
   dueAt?: string;
   caption?: string;
+  credit?: PhotoCredit;
   /** Delete the local work dir after a successful post (default true). */
   cleanupLocal?: boolean;
 }
@@ -47,7 +52,7 @@ export async function publishReel(reel: ReelJob, mp4Path: string, opts: PublishO
 
   log.step(`Posting to Buffer/TikTok (mode: ${mode})…`);
   const postIds = await publishToTiktok({
-    text: opts.caption ?? buildCaption(reel),
+    text: opts.caption ?? buildCaption(reel, opts.credit),
     videoUrl: video.url,
     thumbnailUrl: thumbUp.url,
     mode,

@@ -1,31 +1,36 @@
 import type { Background } from './background.js';
 
+export interface KaraokeWord {
+  t: string;
+  /** absolute ms in the concatenated audio */
+  s: number;
+  e: number;
+}
+
 export interface SceneAyah {
-  arabic: string;
+  words: KaraokeWord[];
   translation: string;
-  /** Arabic-Indic ayah number, e.g. "١" */
   numArabic: string;
   startMs: number;
   endMs: number;
 }
 
 export interface SceneParams {
-  reemBase64: string;
+  arefRegular: string;
+  arefBold: string;
   ubuntuRegular: string;
   ubuntuMedium: string;
-  ubuntuBold: string;
   ubuntuItalic: string;
   background: Background;
   surahName: string;
   surahEnglishName: string;
-  ayahRangeLabel: string; // "Ayah 1–4"
+  ayahRangeLabel: string;
+  reciterName: string;
   showBasmala: boolean;
   ayahs: SceneAyah[];
   durationMs: number;
-  /** Watermark: logo image data-URI takes priority; else handle text. */
   logoDataUri?: string;
   handle?: string;
-  /** Deterministic seed for particle layout / gradient variation. */
   seed: number;
 }
 
@@ -37,20 +42,10 @@ function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// TikTok-safe composition band (1080×1920). Right rail + bottom caption cleared.
-const SAFE = { top: 210, bottom: 430, side: 132 };
+// TikTok-safe band (1080×1920). Right rail + bottom caption cleared.
+const SAFE = { top: 190, bottom: 400, side: 96 };
 
-// Subtle film grain via inline SVG turbulence (static, no external asset).
-const GRAIN =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'>
-      <filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/>
-      <feColorMatrix type='saturate' values='0'/></filter>
-      <rect width='100%' height='100%' filter='url(#n)' opacity='0.5'/></svg>`,
-  );
-
-/** Build the full animated page. Exposes window.__setup() and window.__setTime(ms). */
+/** Build the animated cinematic scene. Exposes window.__setup / __setTime(ms). */
 export function buildScene(p: SceneParams): string {
   const bgLayer =
     p.background.kind === 'image'
@@ -58,16 +53,19 @@ export function buildScene(p: SceneParams): string {
       : `background:${p.background.css};`;
 
   const ayahLayers = p.ayahs
-    .map(
-      (a, i) => `
+    .map((a, i) => {
+      const words = a.words
+        .map((w) => `<span class="w" data-s="${w.s}" data-e="${w.e}">${esc(w.t)}</span>`)
+        .join(' ');
+      return `
     <div class="ayah" data-i="${i}" data-start="${a.startMs}" data-end="${a.endMs}">
       <div class="body">
-        <div class="num"><span>${esc(a.numArabic)}</span></div>
-        <div class="artext" dir="rtl">${esc(a.arabic)}</div>
-        ${a.translation ? `<div class="orn"><i></i><b></b><i></i></div><div class="trtext" dir="ltr">${esc(a.translation)}</div>` : ''}
+        <div class="num">${esc(a.numArabic)}</div>
+        <div class="artext" dir="rtl">${words}</div>
+        ${a.translation ? `<div class="trtext" dir="ltr">${esc(a.translation)}</div>` : ''}
       </div>
-    </div>`,
-    )
+    </div>`;
+    })
     .join('');
 
   const watermark = p.logoDataUri
@@ -76,223 +74,131 @@ export function buildScene(p: SceneParams): string {
       ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
       : '';
 
-  const cfg = {
-    duration: p.durationMs,
-    seed: p.seed,
-    ayahs: p.ayahs.map((a) => ({ s: a.startMs, e: a.endMs })),
-    safe: SAFE,
-  };
+  const cfg = { duration: p.durationMs, seed: p.seed, count: p.ayahs.length };
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
 <style>
-@font-face{font-family:'Reem';src:url(data:font/ttf;base64,${p.reemBase64}) format('truetype');font-weight:400 700;font-display:block}
+@font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefRegular}) format('truetype');font-weight:400;font-display:block}
+@font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefBold}) format('truetype');font-weight:700;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuRegular}) format('truetype');font-weight:400;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuMedium}) format('truetype');font-weight:500;font-display:block}
-@font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuBold}) format('truetype');font-weight:700;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuItalic}) format('truetype');font-weight:400;font-style:italic;font-display:block}
-:root{--gold:#d8b25a;--gold-soft:#e7cd90;--paper:#f6efdf;--muted:#d7ddd2}
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:1080px;height:1920px;overflow:hidden;background:#0b0f0e}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .bg{position:absolute;inset:-6%;${bgLayer}will-change:transform}
-.grain{position:absolute;inset:0;background:url("${GRAIN}");background-size:180px;opacity:.06;mix-blend-mode:overlay;pointer-events:none}
+/* Strong cinematic overlay so white text stays readable on any photo */
 .scrim{position:absolute;inset:0;background:
-  radial-gradient(125% 62% at 50% 42%, rgba(3,10,9,.05) 0%, rgba(3,10,9,.55) 62%, rgba(2,7,6,.82) 100%),
-  linear-gradient(180deg, rgba(2,7,6,.55) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 74%, rgba(2,6,6,.72) 100%)}
+  radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.12) 0%, rgba(4,7,10,.55) 60%, rgba(3,5,8,.80) 100%),
+  linear-gradient(180deg, rgba(3,5,8,.72) 0%, rgba(3,5,8,.22) 22%, rgba(3,5,8,.30) 58%, rgba(3,5,8,.82) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(242,222,162,1),rgba(242,222,162,0) 68%);will-change:transform,opacity}
-/* Slow drifting aurora blobs for background life */
-.auras{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.aura{position:absolute;width:820px;height:820px;border-radius:50%;filter:blur(95px);opacity:0;mix-blend-mode:screen;will-change:transform,opacity}
-#a0{background:radial-gradient(circle,rgba(216,178,90,.55),transparent 60%)}
-#a1{background:radial-gradient(circle,rgba(46,161,138,.5),transparent 60%)}
-#a2{background:radial-gradient(circle,rgba(96,150,225,.42),transparent 60%)}
-/* Progress bar along the very top border */
-.ptrack{position:absolute;top:0;left:0;right:0;height:7px;background:rgba(216,178,90,.16)}
-.pfill{position:absolute;top:0;left:0;height:7px;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-soft));
-  box-shadow:0 0 14px rgba(216,178,90,.7)}
+.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);will-change:transform,opacity}
+.ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
+.pfill{position:absolute;top:0;left:0;height:6px;width:0;background:rgba(255,255,255,.92);box-shadow:0 0 10px rgba(255,255,255,.5)}
 .safe{position:absolute;left:${SAFE.side}px;right:${SAFE.side}px;top:${SAFE.top}px;bottom:${SAFE.bottom}px}
 /* Header */
 .header{position:absolute;top:0;left:0;right:0;text-align:center}
-.hrule{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:14px}
-.hrule i{height:1px;width:70px;background:linear-gradient(90deg,transparent,var(--gold))}
-.hrule i.r{background:linear-gradient(90deg,var(--gold),transparent)}
-.hrule span{font-family:'Ubuntu';font-weight:500;letter-spacing:6px;text-transform:uppercase;
-  font-size:28px;color:var(--gold-soft)}
-.sname{font-family:'Reem';font-weight:700;font-size:64px;color:var(--paper);
-  text-shadow:0 2px 20px rgba(0,0,0,.6);direction:rtl}
-.range{font-family:'Ubuntu';font-style:italic;font-size:30px;color:var(--muted);opacity:.8;margin-top:8px}
-.basmala{font-family:'Reem';font-weight:600;font-size:40px;color:var(--gold-soft);opacity:.85;
-  margin-top:16px;text-shadow:0 2px 16px rgba(0,0,0,.6);direction:rtl}
-/* Ayah stage — lifted toward the header, centered in the upper-safe band */
-/* Stage begins below the header (reserves room for name+basmala) so large text never collides. */
-.stage{position:absolute;left:0;right:0;top:300px;bottom:150px}
-/* .ayah centers its content; .body carries opacity+drift animation and is what we measure to fit. */
-.ayah{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%)}
-.body{display:flex;flex-direction:column;align-items:center;gap:38px;opacity:0;will-change:opacity,transform}
-.num{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;
-  border:1.5px solid rgba(216,178,90,.6);background:rgba(216,178,90,.08);
-  box-shadow:0 0 22px rgba(216,178,90,.18) inset}
-.num span{font-family:'Reem';font-weight:600;font-size:42px;line-height:1;color:var(--gold-soft);
-  transform:translateY(1px)}
-.artext{font-family:'Reem';font-weight:600;font-size:196px;line-height:1.5;color:var(--paper);
-  text-align:center;direction:rtl;text-shadow:0 3px 30px rgba(0,0,0,.7)}
-.orn{display:flex;align-items:center;justify-content:center;gap:16px}
-.orn i{height:1px;width:80px;background:linear-gradient(90deg,transparent,rgba(216,178,90,.7))}
-.orn i:last-child{background:linear-gradient(90deg,rgba(216,178,90,.7),transparent)}
-.orn b{width:9px;height:9px;transform:rotate(45deg);background:var(--gold);box-shadow:0 0 12px rgba(216,178,90,.8)}
-.trtext{font-family:'Ubuntu';font-weight:400;font-size:50px;line-height:1.4;color:var(--muted);
-  text-align:center;max-width:880px;text-shadow:0 2px 16px rgba(0,0,0,.6)}
-/* Watermark — PNG icon in the top-right, OUTSIDE the safe zone (above TikTok's
-   right-side action buttons). Positioned relative to the full frame, not .safe. */
+.sname{font-family:'Aref';font-weight:700;font-size:58px;color:#fff;direction:rtl;
+  filter:drop-shadow(0 2px 14px rgba(0,0,0,.75))}
+.meta{font-family:'Ubuntu';font-weight:500;letter-spacing:4px;text-transform:uppercase;
+  font-size:26px;color:rgba(255,255,255,.85);margin-top:12px;text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.basmala{font-family:'Aref';font-weight:400;font-size:40px;color:rgba(255,255,255,.9);margin-top:18px;
+  direction:rtl;filter:drop-shadow(0 2px 12px rgba(0,0,0,.7))}
+/* Ayah stage (reserves room below header, above footer — never overlaps) */
+.stage{position:absolute;left:0;right:0;top:300px;bottom:120px}
+.ayah{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);opacity:0;will-change:opacity}
+.body{display:flex;flex-direction:column;align-items:center;gap:44px}
+.num{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;
+  border:2px solid rgba(255,255,255,.65);color:#fff;font-family:'Aref';font-weight:700;font-size:32px;
+  text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.artext{font-family:'Aref';font-weight:700;font-size:150px;line-height:1.7;text-align:center;direction:rtl;
+  filter:drop-shadow(0 3px 20px rgba(0,0,0,.85))}
+/* Karaoke word fill: bright already-recited part, dim upcoming (RTL: fills from right) */
+.w{color:transparent;background-image:linear-gradient(to left, var(--on) var(--f,0%), var(--off) var(--f,0%));
+  -webkit-background-clip:text;background-clip:text;--on:#ffffff;--off:rgba(255,255,255,.42)}
+.trtext{font-family:'Ubuntu';font-weight:400;font-size:48px;line-height:1.4;color:rgba(255,255,255,.95);
+  text-align:center;max-width:900px;text-shadow:0 2px 14px rgba(0,0,0,.8)}
+/* Reciter footer (bottom of safe band) */
+.footer{position:absolute;bottom:0;left:0;right:0;text-align:center;
+  font-family:'Ubuntu';font-weight:500;font-size:30px;color:rgba(255,255,255,.85);
+  text-shadow:0 2px 10px rgba(0,0,0,.7)}
+.footer b{font-weight:500;color:#fff}
+/* Watermark PNG top-right (outside safe zone, above TikTok buttons) */
 .wm{position:absolute;top:150px;right:52px;display:flex;align-items:center;z-index:5}
-.wm-logo{height:104px;width:auto;opacity:.92;filter:drop-shadow(0 2px 10px rgba(0,0,0,.55))}
-.wm-handle{font-family:'Ubuntu';font-weight:600;letter-spacing:2px;font-size:28px;color:rgba(246,239,223,.85);
-  text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.wm-logo{height:104px;width:auto;opacity:.95;filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))}
+.wm-handle{font-family:'Ubuntu';font-weight:600;letter-spacing:2px;font-size:28px;color:rgba(255,255,255,.9);text-shadow:0 2px 10px rgba(0,0,0,.7)}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
-  <div class="auras"><div class="aura" id="a0"></div><div class="aura" id="a1"></div><div class="aura" id="a2"></div></div>
-  <div class="grain"></div>
   <div class="scrim"></div>
   <div class="particles" id="particles"></div>
   <div class="ptrack"></div><div class="pfill" id="pfill"></div>
   <div class="safe">
     <div class="header">
-      <div class="hrule"><i></i><span>${esc(p.surahEnglishName)}</span><i class="r"></i></div>
       <div class="sname" dir="rtl">${esc(p.surahName)}</div>
-      <div class="range">${esc(p.ayahRangeLabel)}</div>
+      <div class="meta">${esc(p.surahEnglishName)} · ${esc(p.ayahRangeLabel)}</div>
       ${p.showBasmala ? `<div class="basmala" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>` : ''}
     </div>
     <div class="stage" id="stage">${ayahLayers}</div>
+    <div class="footer">Recited by <b>${esc(p.reciterName)}</b></div>
   </div>
   <div class="wm">${watermark}</div>
 <script>
 const CFG = ${JSON.stringify(cfg)};
-const FADE = 460;            // ms cross-fade window at each ayah boundary
-const STAGGER = 200;         // ms between each element's reveal within an ayah
-const CHILD_FADE = 420;      // ms for a single element to fade/slide in
-
+const F = 380; // sequential fade in/out (no cross-ayah overlap)
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-
 let particles=[];
-let auras=[];
 window.__setup=function(){
-  // Build particles deterministically from seed
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  const N=40;
-  for(let i=0;i<N;i++){
+  for(let i=0;i<18;i++){
     const el=document.createElement('div');el.className='p';
-    const size=6+rnd()*20;
-    el.style.width=size+'px';el.style.height=size+'px';
-    const pp={el,x:rnd()*1080,baseY:rnd()*1920,size,
-      speed:14+rnd()*34,        // px/sec upward
-      amp:18+rnd()*52,          // horizontal sway px
-      drift:0.15+rnd()*0.5,     // sway speed
-      phase:rnd()*Math.PI*2,
-      op:0.22+rnd()*0.5};
-    particles.push(pp);host.appendChild(el);
+    const size=5+rnd()*13;el.style.width=size+'px';el.style.height=size+'px';
+    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:10+rnd()*26,amp:14+rnd()*40,drift:0.12+rnd()*0.4,phase:rnd()*6.28,op:0.10+rnd()*0.30});
+    host.appendChild(el);
   }
-  // Aurora blobs (deterministic paths, seed nudges their phase for variety)
-  const ph0=(CFG.seed%628)/100;
-  const acfg=[
-    {id:'a0',x0:150,y0:420, ax:210,ay:300, sx:0.050,sy:0.037,ph:ph0+0.0,base:.34,pa:.14,ps:.05},
-    {id:'a1',x0:770,y0:980, ax:250,ay:220, sx:0.043,sy:0.050,ph:ph0+2.1,base:.30,pa:.13,ps:.06},
-    {id:'a2',x0:420,y0:1480,ax:290,ay:210, sx:0.038,sy:0.044,ph:ph0+4.2,base:.24,pa:.11,ps:.045},
-  ];
-  for(const c of acfg){const el=document.getElementById(c.id); if(el){c.el=el;auras.push(c);}}
-  // Fit each ayah so its content block stays inside the stage. We measure the
-  // .body (auto height = actual content), not the centered .ayah container.
-  // Robust order: shrink Arabic → shrink translation → final uniform scale clamp.
+  // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
   const stage=document.getElementById('stage');
-  const maxH=stage.clientHeight-16;
-  // Keep the translation only while the Arabic can stay comfortably large.
-  const KEEP_TR_MIN=130;
+  const maxH=stage.clientHeight-14;
   document.querySelectorAll('.ayah .body').forEach((body)=>{
-    const ar=body.querySelector('.artext');
-    const tr=body.querySelector('.trtext');
-    const orn=body.querySelector('.orn');
+    const ar=body.querySelector('.artext'), tr=body.querySelector('.trtext');
     const fits=()=>body.scrollHeight<=maxH;
-    if(ar){
-      // Shrink Arabic, but not below KEEP_TR_MIN while translation is present.
-      let fs=parseFloat(getComputedStyle(ar).fontSize);let g=90;
-      while(!fits()&&fs>KEEP_TR_MIN&&g-->0){fs-=4;ar.style.fontSize=fs+'px';}
-      // Tall ayah: Arabic would have to get too small alongside the translation.
-      // Drop the translation and let the Arabic use the whole stage.
-      if(!fits()&&tr){
-        tr.style.display='none'; if(orn) orn.style.display='none';
-        while(!fits()&&fs>72&&g-->0){fs-=4;ar.style.fontSize=fs+'px';}
-      }
-    }
-    // If a kept translation still overflows a touch, shrink it.
+    if(ar){let fs=parseFloat(getComputedStyle(ar).fontSize);let g=90;
+      while(!fits()&&fs>110&&g-->0){fs-=4;ar.style.fontSize=fs+'px';}
+      if(!fits()&&tr){tr.style.display='none';
+        while(!fits()&&fs>66&&g-->0){fs-=4;ar.style.fontSize=fs+'px';}}}
     if(tr&&tr.style.display!=='none'){let fs=parseFloat(getComputedStyle(tr).fontSize);let g=40;
       while(!fits()&&fs>30&&g-->0){fs-=2;tr.style.fontSize=fs+'px';}}
-    // Final clamp so an extreme Arabic-only block never overflows.
-    const scale=fits()?1:Math.max(0.4,maxH/body.scrollHeight);
-    body.dataset.scale=String(scale);
+    body.dataset.scale=fits()?'1':String(Math.max(0.4,maxH/body.scrollHeight));
   });
 };
-
-function ayahOpacity(ms,s,e,isFirst,isLast){
-  const inC=s, outC=e;
-  if(ms<inC-FADE/2 && !isFirst) return {o:0,dy:24};
-  if(ms<inC+FADE/2){
-    if(isFirst){const t=Math.min(1,Math.max(0,ms/ (FADE)));return {o:t,dy:(1-t)*24};}
-    const t=(ms-(inC-FADE/2))/FADE;return {o:t,dy:(1-t)*24};
-  }
-  if(ms<outC-FADE/2) return {o:1,dy:0};
-  if(ms<outC+FADE/2){
-    if(isLast) return {o:1,dy:0};
-    const t=(ms-(outC-FADE/2))/FADE;return {o:1-t,dy:-t*24};
-  }
-  return {o:0,dy:-24};
+function envelope(ms,s,e){
+  if(ms<s||ms>=e) return 0;
+  if(ms<s+F) return (ms-s)/F;
+  if(ms>e-F) return (e-ms)/F;
+  return 1;
 }
-
 window.__setTime=function(ms){
-  const dur=CFG.duration;
-  const prog=Math.min(1,ms/dur);
-  // Ken Burns
-  const sc=1+0.09*(ms/dur);
-  const tx=Math.sin(ms/9000)*10, ty=-6*(ms/dur);
-  document.getElementById('bg').style.transform='scale('+sc.toFixed(4)+') translate('+tx.toFixed(2)+'px,'+ty.toFixed(2)+'px)';
-  // Progress bar
-  document.getElementById('pfill').style.width=(prog*1080).toFixed(1)+'px';
-  const sec=ms/1000;
-  // Aurora blobs — slow sine drift + pulse for background life
-  for(const a of auras){
-    const x=a.x0+Math.sin(sec*a.sx+a.ph)*a.ax-410;
-    const y=a.y0+Math.cos(sec*a.sy+a.ph)*a.ay-410;
-    const s=1+0.12*Math.sin(sec*a.ps*1.7+a.ph);
-    const op=Math.max(0,a.base+Math.sin(sec*a.ps+a.ph)*a.pa);
-    a.el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) scale('+s.toFixed(3)+')';
-    a.el.style.opacity=op.toFixed(3);
-  }
-  // Particles
+  const dur=CFG.duration, sec=ms/1000;
+  document.getElementById('bg').style.transform='scale('+(1+0.08*(ms/dur)).toFixed(4)+') translate('+(Math.sin(ms/9000)*10).toFixed(1)+'px,'+(-6*(ms/dur)).toFixed(1)+'px)';
+  document.getElementById('pfill').style.width=(Math.min(1,ms/dur)*1080).toFixed(1)+'px';
   for(const p of particles){
     let y=p.baseY-sec*p.speed;y=((y%1920)+1920)%1920;
     const x=p.x+Math.sin(sec*p.drift+p.phase)*p.amp;
-    const flick=p.op*(0.7+0.3*Math.sin(sec*1.3+p.phase));
     p.el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
-    p.el.style.opacity=flick.toFixed(3);
+    p.el.style.opacity=(p.op*(0.7+0.3*Math.sin(sec*1.3+p.phase))).toFixed(3);
   }
-  // Ayahs
-  const A=CFG.ayahs;
   document.querySelectorAll('.ayah').forEach((el)=>{
-    const i=+el.dataset.i, s=+el.dataset.start, e=+el.dataset.end;
-    const r=ayahOpacity(ms,s,e,i===0,i===A.length-1);
+    const s=+el.dataset.start, e=+el.dataset.end;
+    const o=envelope(ms,s,e);
     const body=el.querySelector('.body');
-    const sc=body.dataset.scale||'1';
-    body.style.opacity=r.o.toFixed(3);
-    body.style.transform='translateY('+r.dy.toFixed(1)+'px) scale('+sc+')';
-    // Staggered one-by-one reveal of this ayah's elements (num → arabic → divider → translation).
-    // Nested opacity multiplies with the body envelope, so they reveal in, then fade out together.
-    const es=s-FADE/2;
-    const kids=body.children;
-    for(let k=0;k<kids.length;k++){
-      const t=Math.min(1,Math.max(0,(ms-es-k*STAGGER)/CHILD_FADE));
-      kids[k].style.opacity=t.toFixed(3);
-      kids[k].style.transform='translateY('+((1-t)*16).toFixed(1)+'px)';
-    }
+    body.parentElement.style.opacity=o.toFixed(3);
+    body.style.transform='scale('+(body.dataset.scale||'1')+')';
+    if(o<=0.001) return; // skip karaoke work for hidden ayahs
+    body.querySelectorAll('.w').forEach((w)=>{
+      const ws=+w.dataset.s, we=+w.dataset.e;
+      const f=Math.max(0,Math.min(1,(ms-ws)/Math.max(1,we-ws)));
+      w.style.setProperty('--f',(f*100).toFixed(1)+'%');
+    });
   });
 };
 </script>

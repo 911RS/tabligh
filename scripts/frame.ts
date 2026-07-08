@@ -1,7 +1,6 @@
 /**
- * Debug helper: render ONE frame of the animated scene at a given time, fast.
- *   npx tsx scripts/frame.ts <ir.json> <timeMs> [out.png]
- * Lets us iterate on visuals without encoding a full video.
+ * Debug: render ONE frame of the scene at a given time, fast.
+ *   npx tsx scripts/frame.ts <ir.json> <timeMs> [out.png] [keyword...]
  */
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -10,31 +9,39 @@ import { buildScene, toArabicDigits, type SceneAyah } from '../src/render/scene.
 import { resolveBackground } from '../src/render/background.js';
 import type { ReelJob } from '../src/types.js';
 
-const [, , irPath, timeStr, outArg] = process.argv;
+const [, , irPath, timeStr, outArg, ...kw] = process.argv;
 const timeMs = Number(timeStr ?? '2500');
 const out = outArg ?? '/home/dell/Sync/QuranPoster/work/frame-debug.png';
+
+const MARKS = /[ؐ-ًؚ-ٰٟۖ-ۭـ]/g;
+function words(arabic: string, s: number, e: number): SceneAyah['words'] {
+  const ws = arabic.trim().split(/\s+/).filter(Boolean);
+  const wt = ws.map((w) => Math.max(1, w.replace(MARKS, '').length));
+  const total = wt.reduce((a, b) => a + b, 0) || 1;
+  let c = s;
+  return ws.map((t, i) => { const d = ((e - s) * wt[i]) / total; const st = c; c += d; return { t, s: Math.round(st), e: Math.round(c) }; });
+}
 
 const reel = JSON.parse(await readFile(irPath, 'utf8')) as ReelJob;
 const F = (f: string) => join(process.cwd(), 'assets/fonts', f);
 const b64 = (f: string) => readFile(F(f)).then((b) => b.toString('base64'));
-
-const [reemBase64, ubuntuRegular, ubuntuMedium, ubuntuBold, ubuntuItalic] = await Promise.all([
-  b64('ReemKufiFun.ttf'), b64('Ubuntu-Regular.ttf'), b64('Ubuntu-Medium.ttf'),
-  b64('Ubuntu-Bold.ttf'), b64('Ubuntu-Italic.ttf'),
+const [arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
+  b64('ArefRuqaa-Regular.ttf'), b64('ArefRuqaa-Bold.ttf'),
+  b64('Ubuntu-Regular.ttf'), b64('Ubuntu-Medium.ttf'), b64('Ubuntu-Italic.ttf'),
 ]);
 
 const ayahs: SceneAyah[] = reel.ayahs.map((a) => ({
-  arabic: a.arabic, translation: a.translation, numArabic: toArabicDigits(a.ayah),
-  startMs: a.startMs, endMs: a.endMs,
+  words: words(a.arabic, a.startMs, a.endMs), translation: a.translation,
+  numArabic: toArabicDigits(a.ayah), startMs: a.startMs, endMs: a.endMs,
 }));
 
-const background = await resolveBackground([], 'auto', 42);
+const background = await resolveBackground(kw, 'auto', 7);
 const html = buildScene({
-  reemBase64, ubuntuRegular, ubuntuMedium, ubuntuBold, ubuntuItalic, background,
+  arefRegular, arefBold, ubuntuRegular, ubuntuMedium, ubuntuItalic, background,
   surahName: reel.surahName, surahEnglishName: reel.surahEnglishName,
   ayahRangeLabel: reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`,
-  showBasmala: reel.hasBasmala, ayahs, durationMs: reel.durationMs,
-  handle: '@quran.reels', seed: 42,
+  reciterName: reel.reciterName || 'Reciter', showBasmala: reel.hasBasmala, ayahs,
+  durationMs: reel.durationMs, handle: '@eQurany', seed: 7,
 });
 
 const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });

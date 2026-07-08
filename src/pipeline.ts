@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { env, type Job } from './config.js';
-import { resolveReciter } from './quran/reciters.js';
+import { resolveReciter, reciterDisplayName } from './quran/reciters.js';
 import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
 import { downloadTimedAyahs, concatAudio } from './quran/audio.js';
 import { log } from './util/log.js';
@@ -60,6 +60,7 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
     ayahFrom,
     ayahTo,
     reciter: reciterFolder,
+    reciterName: reciterDisplayName(reciterFolder),
     translationEdition: job.translationEdition,
     surahName: surahMeta.name,
     surahEnglishName: surahMeta.englishName,
@@ -75,19 +76,23 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   return reel;
 }
 
+export interface RenderResult {
+  mp4: string;
+  credit?: import('./render/background.js').PhotoCredit;
+}
+
 /**
- * Stage 2 (render): data IR → background → stills → assembled MP4.
- * Returns the path to reel.mp4.
+ * Stage 2 (render): data IR → background → animated frames → assembled MP4.
+ * Returns the MP4 path and the background photo credit (for the caption).
  */
-export async function renderReel(job: Job, reel: ReelJob): Promise<string> {
-  // Randomize each run so the background "life" (gradient + particle layout)
-  // varies between renders, while staying deterministic within a single run.
+export async function renderReel(job: Job, reel: ReelJob): Promise<RenderResult> {
+  // Randomize each run so the background photo + particle layout vary between runs.
   const seed = Math.floor(Math.random() * 1e9);
 
   log.step('Resolving background…');
   const background = await resolveBackground(job.background.keywords, job.background.source, seed);
 
-  log.step('Rendering animated frames (Reem Kufi Fun)…');
+  log.step('Rendering animated frames (Aref Ruqaa + karaoke)…');
   const frames = await renderFrames(reel, {
     background,
     handle: job.watermarkHandle || undefined,
@@ -95,5 +100,6 @@ export async function renderReel(job: Job, reel: ReelJob): Promise<string> {
   });
 
   log.step('Assembling video…');
-  return assembleVideo(reel, frames);
+  const mp4 = await assembleVideo(reel, frames);
+  return { mp4, credit: background.credit };
 }

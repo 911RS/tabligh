@@ -14,7 +14,7 @@ export interface Reciter {
 }
 
 export const RECITERS: Reciter[] = [
-  { id: 'menshawi-16', name: 'Mohamed Siddiq El-Minshawi (16k)', folder: 'Menshawi_16kbps', style: 'murattal' },
+  { id: 'minshawy', name: 'Mohamed Siddiq El-Minshawi', folder: 'Minshawy_Murattal_128kbps', style: 'murattal' },
   { id: 'husary', name: 'Mahmoud Khalil Al-Husary', folder: 'Husary_128kbps', style: 'murattal' },
   { id: 'husary-muallim', name: 'Al-Husary (Muallim)', folder: 'Husary_Muallim_128kbps', style: 'muallim' },
   { id: 'hudhaify', name: 'Ali Al-Hudhaify', folder: 'Hudhaify_128kbps', style: 'murattal' },
@@ -33,4 +33,11 @@ export function findReciter(input: string): Reciter | undefined {
   return RECITERS.find(
     (r) => r.id === input || r.folder === input || r.name.toLowerCase() === input.toLowerCase(),
   );
+}
+
+/** Human-friendly reciter name for a folder/id (falls back to a tidied folder). */
+export function reciterDisplayName(input: string): string {
+  const hit = findReciter(input);
+  if (hit) return hit.name;
+  return input.replace(/_\d+kbps.*$/i, '').replace(/_/g, ' ').trim();
 }

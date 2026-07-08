@@ -25,16 +25,18 @@ function nowParts(): { hm: string; day: string } {
 async function runOnce(): Promise<void> {
   try {
     await prune();
+    // Skip the (heavy) render entirely until Buffer is set up — no point burning
+    // CPU on videos we can't post yet. Runs resume automatically once configured.
+    if (!isConfigured()) {
+      log.warn('Buffer not configured (CK8 / BUFFER_TIKTOK_CHANNEL_IDS) — skipping this run.');
+      return;
+    }
     const job = await pickRandomJob({ publish: true });
     const runTag = `serve-${Date.now()}`;
     const reel = await buildReelJob(job, runTag);
-    const mp4 = await renderReel(job, reel);
-    if (isConfigured()) {
-      const ids = await publishReel(reel, mp4);
-      log.ok(`Published ${ids.join(', ')}`);
-    } else {
-      log.warn('Buffer not configured — rendered but not published (video kept locally).');
-    }
+    const { mp4, credit } = await renderReel(job, reel);
+    const ids = await publishReel(reel, mp4, { credit });
+    log.ok(`Published ${ids.join(', ')}`);
   } catch (e) {
     log.error(`Scheduled run failed: ${e instanceof Error ? e.message : e}`);
   }

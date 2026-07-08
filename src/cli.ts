@@ -44,7 +44,7 @@ function publishMode(f: Record<string, string | boolean>): PostMode {
 /** Render a job and, if requested, publish it to Buffer/TikTok. */
 async function renderAndMaybePublish(job: Job, runTag: string, flags: Record<string, string | boolean>) {
   const reel = await buildReelJob(job, runTag);
-  const mp4 = await renderReel(job, reel);
+  const { mp4, credit } = await renderReel(job, reel);
   log.ok(`Video → ${mp4}`);
   if (job.publish) {
     if (!isConfigured()) {
@@ -54,6 +54,7 @@ async function renderAndMaybePublish(job: Job, runTag: string, flags: Record<str
     const ids = await publishReel(reel, mp4, {
       mode: publishMode(flags),
       dueAt: typeof flags.due === 'string' ? flags.due : undefined,
+      credit,
     });
     log.ok(`Published. Buffer post id(s): ${ids.join(', ')}`);
   }

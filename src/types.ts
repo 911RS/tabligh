@@ -43,6 +43,8 @@ export interface ReelJob {
   ayahFrom: number;
   ayahTo: number;
   reciter: string;
+  /** Human-friendly reciter name, e.g. "Mahmoud Khalil Al-Husary" */
+  reciterName: string;
   translationEdition: string;
   /** Arabic surah name, e.g. "سُورَةُ الإِخْلَاصِ" */
   surahName: string;
