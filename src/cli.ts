@@ -27,8 +27,9 @@ function jobFromFlags(f: Record<string, string | boolean>): Job {
     surah: Number(f.surah),
     ayahFrom: Number(f.from),
     ayahTo: Number(f.to),
-    reciter: (f.reciter as string) ?? 'alafasy',
+    reciter: (f.reciter as string) ?? 'husary',
     translationEdition: f.translation === undefined ? 'en.sahih' : String(f.translation),
+    watermarkHandle: typeof f.watermark === 'string' ? f.watermark : '',
     publish: f.publish === true,
   });
 }

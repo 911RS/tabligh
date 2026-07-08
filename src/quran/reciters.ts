@@ -14,7 +14,6 @@ export interface Reciter {
 }
 
 export const RECITERS: Reciter[] = [
-  { id: 'alafasy', name: 'Mishary Rashid Alafasy', folder: 'Alafasy_128kbps', style: 'murattal' },
   { id: 'menshawi-16', name: 'Mohamed Siddiq El-Minshawi (16k)', folder: 'Menshawi_16kbps', style: 'murattal' },
   { id: 'husary', name: 'Mahmoud Khalil Al-Husary', folder: 'Husary_128kbps', style: 'murattal' },
   { id: 'husary-muallim', name: 'Al-Husary (Muallim)', folder: 'Husary_Muallim_128kbps', style: 'muallim' },

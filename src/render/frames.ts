@@ -1,0 +1,113 @@
+import { mkdir, readFile, access } from 'node:fs/promises';
+import { join } from 'node:path';
+import puppeteer, { type Browser } from 'puppeteer';
+import { env } from '../config.js';
+import { log } from '../util/log.js';
+import type { ReelJob } from '../types.js';
+import type { Background } from './background.js';
+import { buildScene, toArabicDigits, type SceneAyah } from './scene.js';
+
+const W = 1080;
+const H = 1920;
+export const FPS = 25;
+
+const FONT = (f: string) => join(process.cwd(), 'assets/fonts', f);
+
+async function exists(p: string): Promise<boolean> {
+  try { await access(p); return true; } catch { return false; }
+}
+
+export interface FrameRenderOpts {
+  background: Background;
+  handle?: string;
+  seed: number;
+}
+
+/** Render the animated scene to a JPEG frame sequence. Returns { dir, frameCount }. */
+export async function renderFrames(
+  reel: ReelJob,
+  opts: FrameRenderOpts,
+): Promise<{ dir: string; frameCount: number }> {
+  const framesDir = join(reel.workDir, 'frames');
+  await mkdir(framesDir, { recursive: true });
+
+  const [reemBase64, ubuntuRegular, ubuntuMedium, ubuntuBold, ubuntuItalic] = await Promise.all([
+    readFile(FONT('ReemKufiFun.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('Ubuntu-Regular.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('Ubuntu-Medium.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('Ubuntu-Bold.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('Ubuntu-Italic.ttf')).then((b) => b.toString('base64')),
+  ]);
+
+  // Optional watermark logo (assets/logo.png)
+  const logoPath = join(process.cwd(), 'assets/logo.png');
+  const logoDataUri = (await exists(logoPath))
+    ? `data:image/png;base64,${(await readFile(logoPath)).toString('base64')}`
+    : undefined;
+
+  const sceneAyahs: SceneAyah[] = reel.ayahs.map((a) => ({
+    arabic: a.arabic,
+    translation: a.translation,
+    numArabic: toArabicDigits(a.ayah),
+    startMs: a.startMs,
+    endMs: a.endMs,
+  }));
+
+  const rangeLabel =
+    reel.ayahFrom === reel.ayahTo
+      ? `Ayah ${reel.ayahFrom}`
+      : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`;
+
+  const html = buildScene({
+    reemBase64,
+    ubuntuRegular,
+    ubuntuMedium,
+    ubuntuBold,
+    ubuntuItalic,
+    background: opts.background,
+    surahName: reel.surahName,
+    surahEnglishName: reel.surahEnglishName,
+    ayahRangeLabel: rangeLabel,
+    showBasmala: reel.hasBasmala,
+    ayahs: sceneAyahs,
+    durationMs: reel.durationMs,
+    logoDataUri,
+    handle: opts.handle,
+    seed: opts.seed,
+  });
+
+  const frameCount = Math.ceil((reel.durationMs / 1000) * FPS);
+
+  const browser: Browser = await puppeteer.launch({
+    headless: true,
+    executablePath: env.puppeteerExecutablePath,
+    protocolTimeout: 300000,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote'],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: W, height: H, deviceScaleFactor: 1 });
+    await page.setContent(html, { waitUntil: 'load' });
+    await page.evaluate(() => (document as any).fonts.ready);
+    await page.evaluate(() => (window as any).__setup());
+
+    let lastPct = -1;
+    for (let f = 0; f < frameCount; f++) {
+      const ms = (f / FPS) * 1000;
+      await page.evaluate((t) => (window as any).__setTime(t), ms);
+      await page.screenshot({
+        path: join(framesDir, `frame-${String(f).padStart(5, '0')}.jpg`),
+        type: 'jpeg',
+        quality: 92,
+      });
+      const pct = Math.floor(((f + 1) / frameCount) * 100);
+      if (pct >= lastPct + 20) { log.step(`Frames ${pct}%`); lastPct = pct; }
+    }
+  } finally {
+    await browser.close();
+  }
+
+  log.ok(`Rendered ${frameCount} frames @ ${FPS}fps`);
+  return { dir: framesDir, frameCount };
+}

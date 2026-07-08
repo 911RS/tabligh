@@ -55,6 +55,34 @@ async function fetchAyah(
   return { surah, ayah, key: `${surah}:${ayah}`, arabic, translation, strippedBasmala };
 }
 
+export interface SurahMeta {
+  number: number;
+  /** Arabic surah name, e.g. "سُورَةُ الإِخْلَاصِ" */
+  name: string;
+  /** Transliterated name, e.g. "Al-Ikhlaas" */
+  englishName: string;
+  /** e.g. "Sincerity" */
+  englishNameTranslation: string;
+  numberOfAyahs: number;
+}
+
+/** Fetch surah-level metadata (name, ayah count) for the header. */
+export async function fetchSurahMeta(surah: number): Promise<SurahMeta> {
+  const url = `${env.quranApiBase}/surah/${surah}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Quran API ${res.status} for surah ${surah}`);
+  const body = (await res.json()) as { code: number; data: SurahMeta };
+  if (body.code !== 200 || !body.data) throw new Error(`Bad surah payload for ${surah}`);
+  const d = body.data;
+  return {
+    number: d.number,
+    name: d.name,
+    englishName: d.englishName,
+    englishNameTranslation: d.englishNameTranslation,
+    numberOfAyahs: d.numberOfAyahs,
+  };
+}
+
 /** Fetch the full passage [ayahFrom..ayahTo], in order. */
 export async function fetchPassageText(
   surah: number,

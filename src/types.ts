@@ -44,6 +44,10 @@ export interface ReelJob {
   ayahTo: number;
   reciter: string;
   translationEdition: string;
+  /** Arabic surah name, e.g. "سُورَةُ الإِخْلَاصِ" */
+  surahName: string;
+  /** Transliterated surah name, e.g. "Al-Ikhlaas" */
+  surahEnglishName: string;
   ayahs: TimedAyah[];
   /** Concatenated recitation audio for the whole passage */
   audioFile: string;

@@ -8,7 +8,7 @@ export const JobSchema = z.object({
   ayahFrom: z.number().int().min(1),
   ayahTo: z.number().int().min(1),
   /** everyayah reciter id, name, or raw folder (see reciters.ts) */
-  reciter: z.string().default('alafasy'),
+  reciter: z.string().default('husary'),
   /** alquran.cloud translation edition, e.g. en.sahih, fr.hamidullah. '' = Arabic only */
   translationEdition: z.string().default('en.sahih'),
   background: z
@@ -17,6 +17,8 @@ export const JobSchema = z.object({
       keywords: z.array(z.string()).default([]),
     })
     .default({ source: 'auto', keywords: [] }),
+  /** Watermark handle shown on the reel, e.g. "@myaccount". '' = none. */
+  watermarkHandle: z.string().default(''),
   /** Post to Buffer/TikTok at the end. Default false = render only. */
   publish: z.boolean().default(false),
 }).refine((j) => j.ayahTo >= j.ayahFrom, {

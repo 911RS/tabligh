@@ -2,11 +2,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Job } from './config.js';
 import { resolveReciter } from './quran/reciters.js';
-import { fetchPassageText } from './quran/quranApi.js';
+import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
 import { downloadTimedAyahs, concatAudio } from './quran/audio.js';
 import { log } from './util/log.js';
 import { resolveBackground } from './render/background.js';
-import { renderStills } from './render/still.js';
+import { renderFrames } from './render/frames.js';
 import { assembleVideo } from './video/assemble.js';
 import type { ReelJob } from './types.js';
 
@@ -31,9 +31,12 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
     `Passage ${job.surah}:${job.ayahFrom}-${job.ayahTo} · reciter ${reciterFolder} · translation ${job.translationEdition || '(none)'}`,
   );
 
-  log.step('Fetching text (Uthmani + translation)…');
-  const text = await fetchPassageText(job.surah, job.ayahFrom, job.ayahTo, job.translationEdition);
-  log.ok(`Fetched ${text.length} ayah(s)`);
+  log.step('Fetching text (Uthmani + translation) + surah meta…');
+  const [text, surahMeta] = await Promise.all([
+    fetchPassageText(job.surah, job.ayahFrom, job.ayahTo, job.translationEdition),
+    fetchSurahMeta(job.surah),
+  ]);
+  log.ok(`Fetched ${text.length} ayah(s) · ${surahMeta.englishName}`);
 
   log.step('Downloading per-ayah audio + computing exact timing…');
   const ayahs = await downloadTimedAyahs(text, reciterFolder, workDir);
@@ -48,6 +51,8 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
     ayahTo: job.ayahTo,
     reciter: reciterFolder,
     translationEdition: job.translationEdition,
+    surahName: surahMeta.name,
+    surahEnglishName: surahMeta.englishName,
     ayahs,
     audioFile,
     durationMs,
@@ -65,13 +70,20 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
  * Returns the path to reel.mp4.
  */
 export async function renderReel(job: Job, reel: ReelJob): Promise<string> {
+  // Randomize each run so the background "life" (gradient + particle layout)
+  // varies between renders, while staying deterministic within a single run.
+  const seed = Math.floor(Math.random() * 1e9);
+
   log.step('Resolving background…');
-  const seed = job.surah * 114 + job.ayahFrom;
   const background = await resolveBackground(job.background.keywords, job.background.source, seed);
 
-  log.step('Rendering ayah stills (Amiri Quran)…');
-  const stills = await renderStills(reel, background);
+  log.step('Rendering animated frames (Reem Kufi Fun)…');
+  const frames = await renderFrames(reel, {
+    background,
+    handle: job.watermarkHandle || undefined,
+    seed,
+  });
 
   log.step('Assembling video…');
-  return assembleVideo(reel, stills);
+  return assembleVideo(reel, frames);
 }

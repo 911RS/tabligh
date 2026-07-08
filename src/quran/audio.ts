@@ -14,9 +14,37 @@ function everyayahUrl(folder: string, surah: number, ayah: number): string {
 }
 
 /**
- * Download each ayah's individual MP3 from everyayah, probe its exact duration,
- * and derive cumulative [startMs,endMs] boundaries. Because each file IS one
- * ayah, timing is exact and free — no ASR, no alignment.
+ * Trim excess leading/trailing silence (keeping a small natural pad) and apply
+ * short edge fades to a raw ayah MP3, writing a uniform PCM WAV. This removes the
+ * abrupt "cut"/dead-air feel between concatenated ayahs without clipping the
+ * recitation. Falls back to the raw file if processing fails.
+ */
+async function processAyahAudio(rawMp3: string, destWav: string): Promise<string> {
+  try {
+    await run('ffmpeg', [
+      '-y', '-i', rawMp3,
+      '-af',
+      // trim leading silence (keep 0.10s), then trailing (keep 0.25s) via reverse,
+      // then 20ms fade-in and 55ms fade-out (as reversed fade-in) to kill clicks.
+      'silenceremove=start_periods=1:start_silence=0.10:start_threshold=-45dB,' +
+        'areverse,' +
+        'silenceremove=start_periods=1:start_silence=0.25:start_threshold=-45dB,' +
+        'afade=t=in:st=0:d=0.055,areverse,' +
+        'afade=t=in:st=0:d=0.020',
+      '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le',
+      destWav,
+    ]);
+    return destWav;
+  } catch {
+    log.warn(`audio processing failed for ${rawMp3}; using raw`);
+    return rawMp3;
+  }
+}
+
+/**
+ * Download each ayah's individual MP3 from everyayah, clean it (trim + edge
+ * fades), probe its exact duration, and derive cumulative [startMs,endMs]
+ * boundaries. Because each file IS one ayah, timing is exact and free — no ASR.
  */
 export async function downloadTimedAyahs(
   ayahs: AyahText[],
@@ -31,7 +59,7 @@ export async function downloadTimedAyahs(
 
   for (const a of ayahs) {
     const url = everyayahUrl(reciterFolder, a.surah, a.ayah);
-    const dest = join(audioDir, `${pad3(a.surah)}${pad3(a.ayah)}.mp3`);
+    const raw = join(audioDir, `${pad3(a.surah)}${pad3(a.ayah)}.raw.mp3`);
 
     const res = await fetch(url);
     if (!res.ok) {
@@ -39,15 +67,13 @@ export async function downloadTimedAyahs(
         `everyayah ${res.status} for ${a.key} — check reciter folder "${reciterFolder}" (${url})`,
       );
     }
-    await writeFile(dest, Buffer.from(await res.arrayBuffer()));
+    await writeFile(raw, Buffer.from(await res.arrayBuffer()));
 
-    const durMs = await probeDurationMs(dest);
-    timed.push({
-      ...a,
-      startMs: cursor,
-      endMs: cursor + durMs,
-      audioFile: dest,
-    });
+    const wav = join(audioDir, `${pad3(a.surah)}${pad3(a.ayah)}.wav`);
+    const audioFile = await processAyahAudio(raw, wav);
+
+    const durMs = await probeDurationMs(audioFile);
+    timed.push({ ...a, startMs: cursor, endMs: cursor + durMs, audioFile });
     cursor += durMs;
     log.step(`${a.key}  ${(durMs / 1000).toFixed(2)}s  →  ${(cursor / 1000).toFixed(2)}s`);
   }
