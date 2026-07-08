@@ -41,7 +41,9 @@ const html = buildScene({
   surahName: reel.surahName, surahEnglishName: reel.surahEnglishName,
   ayahRangeLabel: reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`,
   reciterName: reel.reciterName || 'Reciter', showBasmala: reel.hasBasmala, ayahs,
-  durationMs: reel.durationMs, handle: '@eQurany', seed: 7,
+  durationMs: reel.durationMs, outroMs: 2000,
+  logoDataUri: 'data:image/png;base64,' + (await readFile(join(process.cwd(), 'assets/logo.png')).then((b) => b.toString('base64')).catch(() => '')),
+  handle: '@eQurany', seed: 7,
 });
 
 const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });

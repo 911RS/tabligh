@@ -10,6 +10,8 @@ import { buildScene, toArabicDigits, type SceneAyah } from './scene.js';
 const W = 1080;
 const H = 1920;
 export const FPS = 25;
+/** Silent outro tail (fade-to-black + logo sign-off) appended after the audio. */
+export const OUTRO_MS = 2000;
 
 const FONT = (f: string) => join(process.cwd(), 'assets/fonts', f);
 
@@ -94,12 +96,13 @@ export async function renderFrames(
     showBasmala: reel.hasBasmala,
     ayahs: sceneAyahs,
     durationMs: reel.durationMs,
+    outroMs: OUTRO_MS,
     logoDataUri,
     handle: opts.handle,
     seed: opts.seed,
   });
 
-  const frameCount = Math.ceil((reel.durationMs / 1000) * FPS);
+  const frameCount = Math.ceil(((reel.durationMs + OUTRO_MS) / 1000) * FPS);
 
   const browser: Browser = await puppeteer.launch({
     headless: true,

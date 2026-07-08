@@ -58,8 +58,8 @@ export const env = {
   // of the requested range. Set to 0 to disable.
   fullSurahMaxAyahs: Number(process.env.FULL_SURAH_MAX_AYAHS ?? '7'),
   // `random` mode: pick a consecutive run of this many ayahs (from long surahs).
-  randomMinAyahs: Number(process.env.RANDOM_MIN_AYAHS ?? '3'),
-  randomMaxAyahs: Number(process.env.RANDOM_MAX_AYAHS ?? '7'),
+  randomMinAyahs: Number(process.env.RANDOM_MIN_AYAHS ?? '5'),
+  randomMaxAyahs: Number(process.env.RANDOM_MAX_AYAHS ?? '10'),
   // Keep MinIO objects ~24h after publish so Buffer can ingest, then `prune`
   // removes them. Local assets are always deleted immediately after publish.
   // Flip to 'true' only if you want the (risky) instant MinIO delete.

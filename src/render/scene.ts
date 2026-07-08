@@ -29,6 +29,7 @@ export interface SceneParams {
   showBasmala: boolean;
   ayahs: SceneAyah[];
   durationMs: number;
+  outroMs: number;
   logoDataUri?: string;
   handle?: string;
   seed: number;
@@ -74,7 +75,8 @@ export function buildScene(p: SceneParams): string {
       ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
       : '';
 
-  const cfg = { duration: p.durationMs, seed: p.seed, count: p.ayahs.length };
+  const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length };
+  const endLogo = p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '';
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
 <style>
@@ -107,6 +109,8 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .stage{position:absolute;left:0;right:0;top:300px;bottom:120px}
 .ayah{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);opacity:0;will-change:opacity}
 .body{display:flex;flex-direction:column;align-items:center;gap:44px}
+/* Elements start hidden; setTime fades them in one-by-one (staggered). */
+.num,.artext,.trtext{opacity:0;will-change:opacity,transform}
 .num{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.95);color:#0c0f14;font-family:'Aref';font-weight:700;font-size:36px;
   box-shadow:0 4px 18px rgba(0,0,0,.5)}
@@ -118,14 +122,20 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .trtext{font-family:'Ubuntu';font-weight:400;font-size:48px;line-height:1.4;color:rgba(255,255,255,.95);
   text-align:center;max-width:900px;text-shadow:0 2px 14px rgba(0,0,0,.8)}
 /* Reciter footer (bottom of safe band) */
-.footer{position:absolute;bottom:0;left:0;right:0;text-align:center;
-  font-family:'Ubuntu';font-weight:500;font-size:30px;color:rgba(255,255,255,.85);
+.footer{position:absolute;bottom:0;left:0;right:0;text-align:center;line-height:1.5;
+  font-family:'Ubuntu';font-weight:500;font-size:30px;color:rgba(255,255,255,.82);
   text-shadow:0 2px 10px rgba(0,0,0,.7)}
-.footer b{font-weight:500;color:#fff}
+.footer .lbl{display:inline-flex;align-items:center;gap:10px;opacity:.85}
+.footer .mic{width:28px;height:28px}
+.footer b{display:block;font-weight:700;font-size:38px;color:#fff;margin-top:6px}
 /* Watermark PNG top-right (outside safe zone, above TikTok buttons) */
-.wm{position:absolute;top:150px;right:52px;display:flex;align-items:center;z-index:5}
-.wm-logo{height:104px;width:auto;opacity:.95;filter:drop-shadow(0 2px 10px rgba(0,0,0,.6))}
+.wm{position:absolute;top:130px;right:44px;display:flex;align-items:center;z-index:5}
+.wm-logo{height:150px;width:auto;opacity:.97;filter:drop-shadow(0 3px 14px rgba(0,0,0,.65))}
 .wm-handle{font-family:'Ubuntu';font-weight:600;letter-spacing:2px;font-size:28px;color:rgba(255,255,255,.9);text-shadow:0 2px 10px rgba(0,0,0,.7)}
+/* Outro: fade whole video to black + centered logo sign-off */
+.veil{position:absolute;inset:0;background:#000;opacity:0;z-index:20;pointer-events:none}
+.endcard{position:absolute;inset:0;display:grid;place-items:center;opacity:0;z-index:21;pointer-events:none}
+.end-logo{width:340px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
@@ -139,12 +149,19 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
       ${p.showBasmala ? `<div class="basmala" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>` : ''}
     </div>
     <div class="stage" id="stage">${ayahLayers}</div>
-    <div class="footer">Recited by <b>${esc(p.reciterName)}</b></div>
+    <div class="footer">
+      <span class="lbl"><svg class="mic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>Recited by</span>
+      <b>${esc(p.reciterName)}</b>
+    </div>
   </div>
   <div class="wm">${watermark}</div>
+  <div class="veil" id="veil"></div>
+  <div class="endcard" id="endcard">${endLogo}</div>
 <script>
 const CFG = ${JSON.stringify(cfg)};
-const F = 380; // sequential fade in/out (no cross-ayah overlap)
+const F = 380;            // sequential ayah fade in/out (no cross-ayah overlap)
+const STAGGER = 180;      // ms between each element's reveal within an ayah
+const CHILD_FADE = 380;   // ms for a single element to fade/slide in
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 let particles=[];
 window.__setup=function(){
@@ -191,15 +208,42 @@ window.__setTime=function(ms){
     const s=+el.dataset.start, e=+el.dataset.end;
     const o=envelope(ms,s,e);
     const body=el.querySelector('.body');
-    body.parentElement.style.opacity=o.toFixed(3);
+    el.style.opacity=o.toFixed(3);
     body.style.transform='scale('+(body.dataset.scale||'1')+')';
-    if(o<=0.001) return; // skip karaoke work for hidden ayahs
+    if(o<=0.001) return; // skip work for hidden ayahs
+    // Staggered fade-in of this ayah's elements: number → ayah → translation.
+    const kids=body.children;
+    for(let k=0;k<kids.length;k++){
+      const sf=Math.max(0,Math.min(1,(ms-s-k*STAGGER)/CHILD_FADE));
+      kids[k].style.opacity=sf.toFixed(3);
+      kids[k].style.transform='translateY('+((1-sf)*14).toFixed(1)+'px)';
+    }
+    // Karaoke word fill (RTL right→left)
     body.querySelectorAll('.w').forEach((w)=>{
       const ws=+w.dataset.s, we=+w.dataset.e;
       const f=Math.max(0,Math.min(1,(ms-ws)/Math.max(1,we-ws)));
       w.style.setProperty('--f',(f*100).toFixed(1)+'%');
     });
   });
+  // Outro: once the recitation ends, fade the whole video to black with a
+  // centered logo sign-off (silent tail).
+  const safe=document.querySelector('.safe');
+  const veil=document.getElementById('veil');
+  const ec=document.getElementById('endcard');
+  if(CFG.outro>0 && ms>=CFG.duration){
+    const vp=Math.min(1,(ms-CFG.duration)/CFG.outro);
+    const ease=vp<0.5?2*vp*vp:1-Math.pow(-2*vp+2,2)/2;
+    const cf=Math.min(1,vp/0.45);
+    safe.style.opacity=(1-cf).toFixed(3);
+    safe.style.transform='scale('+(1+0.06*cf).toFixed(3)+')';
+    veil.style.opacity=ease.toFixed(3);
+    let lo=vp<0.15?0:vp<0.6?(vp-0.15)/0.45:vp<0.85?1:1-(vp-0.85)/0.15;
+    ec.style.opacity=Math.max(0,lo).toFixed(3);
+    ec.style.transform='scale('+(0.8+0.22*Math.min(1,vp/0.6)).toFixed(3)+')';
+  } else {
+    safe.style.opacity='1'; safe.style.transform='none';
+    veil.style.opacity='0'; ec.style.opacity='0';
+  }
 };
 </script>
 </body></html>`;
