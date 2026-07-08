@@ -107,9 +107,9 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .stage{position:absolute;left:0;right:0;top:300px;bottom:120px}
 .ayah{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);opacity:0;will-change:opacity}
 .body{display:flex;flex-direction:column;align-items:center;gap:44px}
-.num{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;
-  border:2px solid rgba(255,255,255,.65);color:#fff;font-family:'Aref';font-weight:700;font-size:32px;
-  text-shadow:0 2px 8px rgba(0,0,0,.6)}
+.num{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.95);color:#0c0f14;font-family:'Aref';font-weight:700;font-size:36px;
+  box-shadow:0 4px 18px rgba(0,0,0,.5)}
 .artext{font-family:'Aref';font-weight:700;font-size:150px;line-height:1.7;text-align:center;direction:rtl;
   filter:drop-shadow(0 3px 20px rgba(0,0,0,.85))}
 /* Karaoke word fill: bright already-recited part, dim upcoming (RTL: fills from right) */
