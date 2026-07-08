@@ -15,10 +15,11 @@ ENV NODE_ENV=production \
     PUPPETEER_SKIP_DOWNLOAD=1 \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# System deps: Chromium (puppeteer), ffmpeg (video), yt-dlp (future YouTube path),
-# Arabic-capable fallback fonts. Amiri Quran itself ships vendored in assets/.
+# System deps: Chromium (puppeteer), ffmpeg (video), Arabic-capable fallback
+# fonts. The reel fonts (Aref Ruqaa, Ubuntu) ship vendored in assets/ and are
+# embedded as base64, so OS fonts are only a fallback.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      chromium ffmpeg yt-dlp ca-certificates \
+      chromium ffmpeg ca-certificates \
       fonts-noto-core fonts-noto-extra fontconfig \
     && rm -rf /var/lib/apt/lists/*
 
