@@ -30,7 +30,6 @@ COPY --from=builder /app/dist ./dist
 COPY assets ./assets
 COPY examples ./examples
 
-# Default: print help. Coolify's scheduled task overrides the command, e.g.
-#   node dist/cli.js render --job /config/job.json --publish
+# Always-on: the self-scheduler renders + publishes at PUBLISH_TIMES (3×/day).
 ENTRYPOINT ["node", "dist/cli.js"]
-CMD []
+CMD ["serve"]
