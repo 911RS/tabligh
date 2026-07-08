@@ -31,6 +31,8 @@ COPY --from=builder /app/dist ./dist
 COPY assets ./assets
 COPY examples ./examples
 
-# Always-on: the self-scheduler renders + publishes at PUBLISH_TIMES (3×/day).
+# Always-on: the self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
+# and serves /health + /trigger on this port.
+EXPOSE 3000
 ENTRYPOINT ["node", "dist/cli.js"]
 CMD ["serve"]

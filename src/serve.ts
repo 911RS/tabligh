@@ -70,9 +70,10 @@ function startHttp(): void {
   http
     .createServer((req, res) => {
       const url = new URL(req.url ?? '/', 'http://localhost');
-      if (url.pathname === '/health') {
+      // Root + /health return 200 so the platform proxy sees a healthy backend.
+      if (url.pathname === '/' || url.pathname === '/health') {
         res.writeHead(200, { 'content-type': 'text/plain' });
-        res.end('ok');
+        res.end('quran-poster ok');
         return;
       }
       if (url.pathname === '/trigger') {
