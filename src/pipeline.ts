@@ -1,6 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Job } from './config.js';
+import { env, type Job } from './config.js';
 import { resolveReciter } from './quran/reciters.js';
 import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
 import { downloadTimedAyahs, concatAudio } from './quran/audio.js';
@@ -11,9 +11,8 @@ import { assembleVideo } from './video/assemble.js';
 import type { ReelJob } from './types.js';
 
 /** Slug + a run tag so concurrent/repeat runs don't collide in work/. */
-function workDirFor(job: Job, runTag: string): string {
-  const slug = `${job.surah}_${job.ayahFrom}-${job.ayahTo}_${resolveReciter(job.reciter)}`;
-  return join(process.cwd(), 'work', `${slug}__${runTag}`);
+function workDirFor(surah: number, from: number, to: number, reciter: string, runTag: string): string {
+  return join(process.cwd(), 'work', `${surah}_${from}-${to}_${reciter}__${runTag}`);
 }
 
 /**
@@ -24,18 +23,29 @@ function workDirFor(job: Job, runTag: string): string {
  */
 export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   const reciterFolder = resolveReciter(job.reciter);
-  const workDir = workDirFor(job, runTag);
+
+  // Surah meta first — it drives the effective ayah range.
+  const surahMeta = await fetchSurahMeta(job.surah);
+
+  // Effective range: clamp to the surah, and if the surah is short, render it whole.
+  let ayahFrom = job.ayahFrom;
+  let ayahTo = Math.min(job.ayahTo, surahMeta.numberOfAyahs);
+  const maxFull = env.fullSurahMaxAyahs;
+  if (maxFull > 0 && surahMeta.numberOfAyahs <= maxFull) {
+    ayahFrom = 1;
+    ayahTo = surahMeta.numberOfAyahs;
+    log.step(`Short surah (${surahMeta.numberOfAyahs} ayahs ≤ ${maxFull}) → rendering full surah`);
+  }
+
+  const workDir = workDirFor(job.surah, ayahFrom, ayahTo, reciterFolder, runTag);
   await mkdir(workDir, { recursive: true });
 
   log.step(
-    `Passage ${job.surah}:${job.ayahFrom}-${job.ayahTo} · reciter ${reciterFolder} · translation ${job.translationEdition || '(none)'}`,
+    `Passage ${job.surah}:${ayahFrom}-${ayahTo} · reciter ${reciterFolder} · translation ${job.translationEdition || '(none)'}`,
   );
 
-  log.step('Fetching text (Uthmani + translation) + surah meta…');
-  const [text, surahMeta] = await Promise.all([
-    fetchPassageText(job.surah, job.ayahFrom, job.ayahTo, job.translationEdition),
-    fetchSurahMeta(job.surah),
-  ]);
+  log.step('Fetching text (Uthmani + translation)…');
+  const text = await fetchPassageText(job.surah, ayahFrom, ayahTo, job.translationEdition);
   log.ok(`Fetched ${text.length} ayah(s) · ${surahMeta.englishName}`);
 
   log.step('Downloading per-ayah audio + computing exact timing…');
@@ -47,8 +57,8 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
 
   const reel: ReelJob = {
     surah: job.surah,
-    ayahFrom: job.ayahFrom,
-    ayahTo: job.ayahTo,
+    ayahFrom,
+    ayahTo,
     reciter: reciterFolder,
     translationEdition: job.translationEdition,
     surahName: surahMeta.name,

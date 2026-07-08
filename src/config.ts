@@ -42,6 +42,9 @@ export const env = {
     .map((s) => s.trim())
     .filter(Boolean),
   retentionDays: Number(process.env.RETENTION_DAYS ?? '7'),
+  // If a surah has this many ayahs or fewer, render the WHOLE surah regardless
+  // of the requested range. Set to 0 to disable.
+  fullSurahMaxAyahs: Number(process.env.FULL_SURAH_MAX_AYAHS ?? '7'),
 };
 
 /** Load a job from a JSON file path. */
