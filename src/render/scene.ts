@@ -99,7 +99,13 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#0b0f0e}
   radial-gradient(125% 62% at 50% 42%, rgba(3,10,9,.05) 0%, rgba(3,10,9,.55) 62%, rgba(2,7,6,.82) 100%),
   linear-gradient(180deg, rgba(2,7,6,.55) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 74%, rgba(2,6,6,.72) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(232,205,144,.9),rgba(232,205,144,0) 70%);will-change:transform,opacity}
+.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(242,222,162,1),rgba(242,222,162,0) 68%);will-change:transform,opacity}
+/* Slow drifting aurora blobs for background life */
+.auras{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.aura{position:absolute;width:820px;height:820px;border-radius:50%;filter:blur(95px);opacity:0;mix-blend-mode:screen;will-change:transform,opacity}
+#a0{background:radial-gradient(circle,rgba(216,178,90,.55),transparent 60%)}
+#a1{background:radial-gradient(circle,rgba(46,161,138,.5),transparent 60%)}
+#a2{background:radial-gradient(circle,rgba(96,150,225,.42),transparent 60%)}
 /* Progress bar along the very top border */
 .ptrack{position:absolute;top:0;left:0;right:0;height:7px;background:rgba(216,178,90,.16)}
 .pfill{position:absolute;top:0;left:0;height:7px;width:0;background:linear-gradient(90deg,var(--gold),var(--gold-soft));
@@ -145,6 +151,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#0b0f0e}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
+  <div class="auras"><div class="aura" id="a0"></div><div class="aura" id="a1"></div><div class="aura" id="a2"></div></div>
   <div class="grain"></div>
   <div class="scrim"></div>
   <div class="particles" id="particles"></div>
@@ -161,28 +168,39 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#0b0f0e}
   <div class="wm">${watermark}</div>
 <script>
 const CFG = ${JSON.stringify(cfg)};
-const FADE = 460; // ms cross-fade window at each ayah boundary
+const FADE = 460;            // ms cross-fade window at each ayah boundary
+const STAGGER = 200;         // ms between each element's reveal within an ayah
+const CHILD_FADE = 420;      // ms for a single element to fade/slide in
 
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 let particles=[];
+let auras=[];
 window.__setup=function(){
   // Build particles deterministically from seed
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  const N=26;
+  const N=40;
   for(let i=0;i<N;i++){
     const el=document.createElement('div');el.className='p';
-    const size=6+rnd()*16;
+    const size=6+rnd()*20;
     el.style.width=size+'px';el.style.height=size+'px';
     const pp={el,x:rnd()*1080,baseY:rnd()*1920,size,
-      speed:14+rnd()*30,        // px/sec upward
-      amp:16+rnd()*44,          // horizontal sway px
+      speed:14+rnd()*34,        // px/sec upward
+      amp:18+rnd()*52,          // horizontal sway px
       drift:0.15+rnd()*0.5,     // sway speed
       phase:rnd()*Math.PI*2,
-      op:0.15+rnd()*0.45};
+      op:0.22+rnd()*0.5};
     particles.push(pp);host.appendChild(el);
   }
+  // Aurora blobs (deterministic paths, seed nudges their phase for variety)
+  const ph0=(CFG.seed%628)/100;
+  const acfg=[
+    {id:'a0',x0:150,y0:420, ax:210,ay:300, sx:0.050,sy:0.037,ph:ph0+0.0,base:.34,pa:.14,ps:.05},
+    {id:'a1',x0:770,y0:980, ax:250,ay:220, sx:0.043,sy:0.050,ph:ph0+2.1,base:.30,pa:.13,ps:.06},
+    {id:'a2',x0:420,y0:1480,ax:290,ay:210, sx:0.038,sy:0.044,ph:ph0+4.2,base:.24,pa:.11,ps:.045},
+  ];
+  for(const c of acfg){const el=document.getElementById(c.id); if(el){c.el=el;auras.push(c);}}
   // Fit each ayah so its content block stays inside the stage. We measure the
   // .body (auto height = actual content), not the centered .ayah container.
   // Robust order: shrink Arabic → shrink translation → final uniform scale clamp.
@@ -239,8 +257,17 @@ window.__setTime=function(ms){
   document.getElementById('bg').style.transform='scale('+sc.toFixed(4)+') translate('+tx.toFixed(2)+'px,'+ty.toFixed(2)+'px)';
   // Progress bar
   document.getElementById('pfill').style.width=(prog*1080).toFixed(1)+'px';
-  // Particles
   const sec=ms/1000;
+  // Aurora blobs — slow sine drift + pulse for background life
+  for(const a of auras){
+    const x=a.x0+Math.sin(sec*a.sx+a.ph)*a.ax-410;
+    const y=a.y0+Math.cos(sec*a.sy+a.ph)*a.ay-410;
+    const s=1+0.12*Math.sin(sec*a.ps*1.7+a.ph);
+    const op=Math.max(0,a.base+Math.sin(sec*a.ps+a.ph)*a.pa);
+    a.el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) scale('+s.toFixed(3)+')';
+    a.el.style.opacity=op.toFixed(3);
+  }
+  // Particles
   for(const p of particles){
     let y=p.baseY-sec*p.speed;y=((y%1920)+1920)%1920;
     const x=p.x+Math.sin(sec*p.drift+p.phase)*p.amp;
@@ -257,6 +284,15 @@ window.__setTime=function(ms){
     const sc=body.dataset.scale||'1';
     body.style.opacity=r.o.toFixed(3);
     body.style.transform='translateY('+r.dy.toFixed(1)+'px) scale('+sc+')';
+    // Staggered one-by-one reveal of this ayah's elements (num → arabic → divider → translation).
+    // Nested opacity multiplies with the body envelope, so they reveal in, then fade out together.
+    const es=s-FADE/2;
+    const kids=body.children;
+    for(let k=0;k<kids.length;k++){
+      const t=Math.min(1,Math.max(0,(ms-es-k*STAGGER)/CHILD_FADE));
+      kids[k].style.opacity=t.toFixed(3);
+      kids[k].style.transform='translateY('+((1-t)*16).toFixed(1)+'px)';
+    }
   });
 };
 </script>
