@@ -50,7 +50,18 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   log.ok(`Fetched ${text.length} ayah(s) · ${surahMeta.englishName}`);
 
   log.step('Downloading per-ayah audio + computing exact timing…');
-  const ayahs = await downloadTimedAyahs(text, reciterFolder, workDir);
+  let ayahs = await downloadTimedAyahs(text, reciterFolder, workDir);
+
+  // Enforce the max recitation length (excluding outro): drop trailing ayahs until
+  // the passage fits. This overrides the min-ayah floor — we keep at least one ayah.
+  const maxSec = settings().content.maxDurationSeconds;
+  if (maxSec > 0 && ayahs.length > 1 && ayahs[ayahs.length - 1].endMs > maxSec * 1000) {
+    const kept = ayahs.filter((a) => a.endMs <= maxSec * 1000);
+    const trimmed = kept.length ? kept : ayahs.slice(0, 1);
+    log.step(`Passage ${(ayahs[ayahs.length - 1].endMs / 1000).toFixed(0)}s > ${maxSec}s cap → trimming ${ayahs.length - trimmed.length} trailing ayah(s)`);
+    ayahs = trimmed;
+    ayahTo = ayahFrom + ayahs.length - 1;
+  }
 
   log.step('Concatenating recitation…');
   const { file: audioFile, durationMs } = await concatAudio(ayahs, workDir);

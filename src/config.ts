@@ -66,6 +66,9 @@ export const env = {
   // `random` mode: pick a consecutive run of this many ayahs (from long surahs).
   randomMinAyahs: Number(process.env.RANDOM_MIN_AYAHS ?? '5'),
   randomMaxAyahs: Number(process.env.RANDOM_MAX_AYAHS ?? '10'),
+  // Cap the recitation length (excluding outro), seconds. Trailing ayahs are
+  // dropped until it fits (overrides the min-ayah floor). 0 = no limit.
+  maxVideoSeconds: Number(process.env.MAX_VIDEO_SECONDS ?? '0'),
   // HTTP server (serve mode): port + secret for the manual /trigger endpoint.
   port: Number(process.env.PORT ?? '3000'),
   triggerToken: process.env.TRIGGER_TOKEN ?? '',

@@ -19,6 +19,9 @@ export interface Settings {
     fullSurahMaxAyahs: number;
     randomMinAyahs: number;
     randomMaxAyahs: number;
+    /** Max recitation length (excluding outro), seconds. 0 = no limit. Trailing
+     * ayahs are dropped until the passage fits. */
+    maxDurationSeconds: number;
     backgroundKeywords: string[];
   };
   branding: {
@@ -100,6 +103,7 @@ function seedFromEnv(): StoreData {
         fullSurahMaxAyahs: env.fullSurahMaxAyahs,
         randomMinAyahs: env.randomMinAyahs,
         randomMaxAyahs: env.randomMaxAyahs,
+        maxDurationSeconds: env.maxVideoSeconds,
         backgroundKeywords: [],
       },
       branding: {
@@ -147,7 +151,17 @@ export function loadStore(): StoreData {
   }
   const mtime = statSync(STORE_PATH).mtimeMs;
   if (_cache && _cache.mtime === mtime) return _cache.data;
-  const data = JSON.parse(readFileSync(STORE_PATH, 'utf8')) as StoreData;
+  const loaded = JSON.parse(readFileSync(STORE_PATH, 'utf8')) as Partial<StoreData>;
+  // Merge over fresh defaults so fields added in newer versions always exist.
+  const base = seedFromEnv();
+  const data: StoreData = {
+    version: loaded.version ?? base.version,
+    setupComplete: loaded.setupComplete ?? base.setupComplete,
+    settings: deepMerge(base.settings, (loaded.settings ?? {}) as DeepPartial<Settings>),
+    secrets: deepMerge(base.secrets, (loaded.secrets ?? {}) as DeepPartial<Secrets>),
+    posts: loaded.posts ?? [],
+    queue: loaded.queue ?? [],
+  };
   _cache = { data, mtime };
   return data;
 }

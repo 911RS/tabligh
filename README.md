@@ -115,6 +115,7 @@ Everything is driven by environment variables (`.env`). All are optional except 
 | `OUTRO_TEXT` | Outro sign-off text | a ṣalawāt |
 | `FULL_SURAH_MAX_AYAHS` | Surahs this short render in full | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Passage length for random mode | `5` / `10` |
+| `MAX_VIDEO_SECONDS` | Cap recitation length (excl. outro); trims trailing ayahs to fit (overrides min) | `0` _(no limit)_ |
 | `RETENTION_DAYS` / `MINIO_RETENTION_HOURS` | Cleanup windows | `7` days / `24` h |
 | `PORT` / `TRIGGER_TOKEN` | HTTP server + secret for the trigger endpoint | `3000` / _(unset → disabled)_ |
 
