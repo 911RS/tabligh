@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { readdirSync, statSync, existsSync, createReadStream } from 'node:fs';
+import { join } from 'node:path';
 import { env, JobSchema, type Job } from './config.js';
 import { buildReelJob, renderReel } from './pipeline.js';
 import { pickRandomJob } from './random.js';
@@ -65,7 +67,24 @@ async function scheduledRun(): Promise<void> {
   }
 }
 
-/** Tiny HTTP server: GET /health and secured POST|GET /trigger. */
+/** Newest work/<dir>/reel.mp4 by mtime, or null. */
+function findLatestVideo(): string | null {
+  const root = join(process.cwd(), 'work');
+  let best: string | null = null;
+  let bestT = 0;
+  try {
+    for (const d of readdirSync(root)) {
+      const f = join(root, d, 'reel.mp4');
+      if (existsSync(f)) {
+        const t = statSync(f).mtimeMs;
+        if (t > bestT) { bestT = t; best = f; }
+      }
+    }
+  } catch { /* work/ may not exist */ }
+  return best;
+}
+
+/** Tiny HTTP server: GET /health, secured /trigger, and /last (latest video). */
 function startHttp(): void {
   http
     .createServer((req, res) => {
@@ -97,6 +116,22 @@ function startHttp(): void {
         runJob({ jobOverride, publish }).catch((e) =>
           log.error(`Trigger run failed: ${e instanceof Error ? e.message : e}`),
         );
+        return;
+      }
+      if (url.pathname === '/last') {
+        const key = url.searchParams.get('key') ?? req.headers['x-trigger-key'];
+        if (!env.triggerToken || key !== env.triggerToken) {
+          res.writeHead(401); res.end('unauthorized'); return;
+        }
+        const file = findLatestVideo();
+        if (!file) { res.writeHead(404); res.end('no video rendered yet'); return; }
+        const size = statSync(file).size;
+        res.writeHead(200, {
+          'content-type': 'video/mp4',
+          'content-length': size,
+          'content-disposition': 'inline; filename="reel.mp4"',
+        });
+        createReadStream(file).pipe(res);
         return;
       }
       res.writeHead(404); res.end('not found');
