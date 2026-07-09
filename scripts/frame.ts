@@ -42,7 +42,7 @@ const html = buildScene({
   surahName: reel.surahName, surahEnglishName: reel.surahEnglishName,
   ayahRangeLabel: reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`,
   reciterName: reel.reciterName || 'Reciter', showBasmala: reel.hasBasmala, ayahs,
-  durationMs: reel.durationMs, outroMs: 2000,
+  durationMs: reel.durationMs, outroMs: 4200,
   logoDataUri: logoB64 ? 'data:image/png;base64,' + logoB64 : undefined,
   handle: '@eQurany', showWatermark: false,
   outroText: 'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين',

@@ -134,7 +134,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .trtext{font-family:'Ubuntu';font-weight:400;font-size:48px;line-height:1.4;color:rgba(255,255,255,.95);
   text-align:center;max-width:900px;text-shadow:0 2px 14px rgba(0,0,0,.8)}
 /* Reciter footer (bottom of safe band) */
-.footer{position:absolute;bottom:0;left:0;right:0;text-align:center;line-height:1.5;
+.footer{position:absolute;bottom:-78px;left:0;right:0;text-align:center;line-height:1.5;
   font-family:'Ubuntu';font-weight:500;font-size:30px;color:rgba(255,255,255,.82);
   text-shadow:0 2px 10px rgba(0,0,0,.7)}
 .footer .mic{display:block;width:36px;height:36px;margin:0 auto 10px}
@@ -183,10 +183,10 @@ let particles=[];
 window.__setup=function(){
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  for(let i=0;i<18;i++){
+  for(let i=0;i<34;i++){
     const el=document.createElement('div');el.className='p';
-    const size=5+rnd()*13;el.style.width=size+'px';el.style.height=size+'px';
-    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:10+rnd()*26,amp:14+rnd()*40,drift:0.12+rnd()*0.4,phase:rnd()*6.28,op:0.10+rnd()*0.30});
+    const size=6+rnd()*18;el.style.width=size+'px';el.style.height=size+'px';
+    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:12+rnd()*30,amp:16+rnd()*48,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.22+rnd()*0.45});
     host.appendChild(el);
   }
   // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
@@ -241,24 +241,30 @@ window.__setTime=function(ms){
       w.style.setProperty('--f',(f*100).toFixed(1)+'%');
     });
   });
-  // Outro: once the recitation ends, fade the whole video to black with a
-  // centered logo sign-off (silent tail).
+  // Outro (silent tail): content → black quickly, corner watermark fades out,
+  // then the logo + ṣalawāt fade IN, HOLD for a beat, and finally fade the whole
+  // thing OUT to black.
   const safe=document.querySelector('.safe');
   const veil=document.getElementById('veil');
   const ec=document.getElementById('endcard');
+  const wm=document.querySelector('.wm');
+  const clamp=(x)=>Math.max(0,Math.min(1,x));
   if(CFG.outro>0 && ms>=CFG.duration){
-    const vp=Math.min(1,(ms-CFG.duration)/CFG.outro);
-    const ease=vp<0.5?2*vp*vp:1-Math.pow(-2*vp+2,2)/2;
-    const cf=Math.min(1,vp/0.45);
+    const vp=clamp((ms-CFG.duration)/CFG.outro);
+    // content + corner watermark fade out fast; background turns black
+    const cf=clamp(vp/0.18);
     safe.style.opacity=(1-cf).toFixed(3);
-    safe.style.transform='scale('+(1+0.06*cf).toFixed(3)+')';
-    veil.style.opacity=ease.toFixed(3);
-    let lo=vp<0.15?0:vp<0.6?(vp-0.15)/0.45:vp<0.85?1:1-(vp-0.85)/0.15;
-    ec.style.opacity=Math.max(0,lo).toFixed(3);
-    ec.style.transform='scale('+(0.8+0.22*Math.min(1,vp/0.6)).toFixed(3)+')';
+    safe.style.transform='scale('+(1+0.05*cf).toFixed(3)+')';
+    if(wm) wm.style.opacity=(1-clamp(vp/0.15)).toFixed(3);
+    veil.style.opacity=clamp(vp/0.22).toFixed(3);
+    // end-card: fade in [0.10,0.32] · HOLD [0.32,0.80] · fade out [0.80,1]
+    let lo = vp<0.10 ? 0 : vp<0.32 ? (vp-0.10)/0.22 : vp<0.80 ? 1 : 1-(vp-0.80)/0.20;
+    ec.style.opacity=clamp(lo).toFixed(3);
+    ec.style.transform='scale('+(0.86+0.14*clamp(vp/0.32)).toFixed(3)+')';
   } else {
     safe.style.opacity='1'; safe.style.transform='none';
     veil.style.opacity='0'; ec.style.opacity='0';
+    if(wm) wm.style.opacity='1';
   }
 };
 </script>

@@ -10,8 +10,8 @@ import { buildScene, toArabicDigits, type SceneAyah } from './scene.js';
 const W = 1080;
 const H = 1920;
 export const FPS = 25;
-/** Silent outro tail (fade-to-black + logo sign-off) appended after the audio. */
-export const OUTRO_MS = 2000;
+/** Silent outro tail: content→black, logo+ṣalawāt fade in, HOLD, then fade out. */
+export const OUTRO_MS = 4200;
 
 const FONT = (f: string) => join(process.cwd(), 'assets/fonts', f);
 
@@ -112,7 +112,9 @@ export async function renderFrames(
     headless: true,
     executablePath: env.puppeteerExecutablePath,
     protocolTimeout: 300000,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process', '--no-zygote'],
+    // NOTE: no --single-process/--no-zygote — they crash the Debian system
+    // Chromium ("Failed to launch the browser process"). These flags are stable.
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--disable-software-rasterizer', '--no-first-run'],
   });
 
   try {
