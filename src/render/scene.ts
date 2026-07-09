@@ -112,7 +112,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);will-change:transform,opacity}
 .ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
-.pfill{position:absolute;top:0;left:0;height:6px;width:0;background:rgba(255,255,255,.92);box-shadow:0 0 10px rgba(255,255,255,.5)}
+.pfill{position:absolute;top:0;left:0;height:6px;width:0;background:${p.fillColor};box-shadow:0 0 12px ${p.fillColor}}
 .safe{position:absolute;left:${SAFE.side}px;right:${SAFE.side}px;top:${SAFE.top}px;bottom:${SAFE.bottom}px}
 /* Header */
 .header{position:absolute;top:0;left:0;right:0;text-align:center}
