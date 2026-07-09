@@ -3,14 +3,35 @@ import { log } from '../util/log.js';
 
 const BUFFER_API = 'https://api.buffer.com';
 
-/** True when both a Buffer token and at least one TikTok channel id are set. */
+export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube';
+
+/** All configured channel ids across every platform. */
+function allChannels(): { id: string; platform: Platform }[] {
+  const out: { id: string; platform: Platform }[] = [];
+  (Object.keys(env.bufferChannels) as Platform[]).forEach((platform) => {
+    for (const id of env.bufferChannels[platform]) out.push({ id, platform });
+  });
+  return out;
+}
+
+/** True when a Buffer token and at least one channel (any platform) are set. */
 export function isConfigured(): boolean {
-  return Boolean(env.bufferToken) && env.bufferTiktokChannelIds.length > 0;
+  return Boolean(env.bufferToken) && allChannels().length > 0;
+}
+
+/** Per-service metadata so each platform posts the video as a Reel/Short. */
+function metadataFor(platform: Platform, title: string): Record<string, unknown> | undefined {
+  switch (platform) {
+    case 'instagram': return { instagram: { type: 'reel', shouldShareToFeed: true } };
+    case 'facebook': return { facebook: { type: 'reel' } };
+    case 'youtube': return { youtube: { title: title.slice(0, 100) } };
+    default: return undefined; // tiktok needs none
+  }
 }
 
 /** POST a GraphQL query to Buffer's Publish API. */
 async function gql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  if (!env.bufferToken) throw new Error('CK8 (Buffer token) not set — cannot publish');
+  if (!env.bufferToken) throw new Error('BUFFER_ACCESS_TOKEN not set — cannot publish');
   const res = await fetch(BUFFER_API, {
     method: 'POST',
     headers: {
@@ -68,6 +89,7 @@ export interface CreatePostArgs {
   mode: PostMode;
   /** ISO-8601, required only when mode === 'customScheduled' */
   dueAt?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /** Create a single video post on one channel. Returns the Buffer post id. */
@@ -80,6 +102,7 @@ export async function createPost(args: CreatePostArgs): Promise<string> {
     assets: [{ video: { url: args.videoUrl, thumbnailUrl: args.thumbnailUrl } }],
   };
   if (args.mode === 'customScheduled' && args.dueAt) input.dueAt = args.dueAt;
+  if (args.metadata) input.metadata = args.metadata;
 
   const data = await gql<{
     createPost:
@@ -103,23 +126,26 @@ export async function createPost(args: CreatePostArgs): Promise<string> {
   return r.post.id;
 }
 
-/** Post one video to all configured TikTok channels. Returns created post ids. */
-export async function publishToTiktok(opts: {
+/**
+ * Post one video to every configured channel across all platforms (TikTok,
+ * Instagram Reels, Facebook Reels, YouTube Shorts). Returns created post ids.
+ */
+export async function publishReelToBuffer(opts: {
   text: string;
   videoUrl: string;
   thumbnailUrl: string;
   mode: PostMode;
   dueAt?: string;
 }): Promise<string[]> {
-  const channelIds = env.bufferTiktokChannelIds;
-  if (channelIds.length === 0) {
-    throw new Error('BUFFER_TIKTOK_CHANNEL_IDS not set — nothing to post to');
+  const channels = allChannels();
+  if (channels.length === 0) {
+    throw new Error('No Buffer channels configured — set BUFFER_<PLATFORM>_CHANNEL_IDS');
   }
   const ids: string[] = [];
-  for (const channelId of channelIds) {
-    const id = await createPost({ ...opts, channelId });
-    log.ok(`Buffer post created ${id} on channel ${channelId}`);
-    ids.push(id);
+  for (const { id: channelId, platform } of channels) {
+    const postId = await createPost({ ...opts, channelId, metadata: metadataFor(platform, opts.text) });
+    log.ok(`Buffer post ${postId} on ${platform} channel ${channelId}`);
+    ids.push(postId);
   }
   return ids;
 }

@@ -5,7 +5,7 @@ import { log } from '../util/log.js';
 import type { ReelJob } from '../types.js';
 import { extractThumbnail } from '../video/thumbnail.js';
 import { uploadFile, deleteObject, listStaleObjects } from './minio.js';
-import { publishToTiktok, type PostMode } from './buffer.js';
+import { publishReelToBuffer, type PostMode } from './buffer.js';
 import { appendEntry } from './ledger.js';
 import type { PhotoCredit } from '../render/background.js';
 
@@ -34,7 +34,7 @@ export interface PublishOpts {
 }
 
 /**
- * Publish a rendered reel: thumbnail → MinIO upload → Buffer(TikTok) post →
+ * Publish a rendered reel: thumbnail → MinIO upload → Buffer post →
  * ledger. On success the local work dir is removed (Buffer fetches from MinIO;
  * the MinIO object is pruned later by `prune`).
  */
@@ -50,8 +50,8 @@ export async function publishReel(reel: ReelJob, mp4Path: string, opts: PublishO
   const thumbUp = await uploadFile(thumb, `${stamp}.jpg`, 'image/jpeg');
   log.ok(`Video → ${video.url}`);
 
-  log.step(`Posting to Buffer/TikTok (mode: ${mode})…`);
-  const postIds = await publishToTiktok({
+  log.step(`Posting to Buffer (mode: ${mode})…`);
+  const postIds = await publishReelToBuffer({
     text: opts.caption ?? buildCaption(reel, opts.credit),
     videoUrl: video.url,
     thumbnailUrl: thumbUp.url,
@@ -71,7 +71,7 @@ export async function publishReel(reel: ReelJob, mp4Path: string, opts: PublishO
   });
 
   // Immediate cleanup after a successful post: local work dir + (optionally) the
-  // MinIO objects. If TikTok posts come out empty, set DELETE_MINIO_ON_PUBLISH=false
+  // MinIO objects. If posts come out empty, set DELETE_MINIO_ON_PUBLISH=false
   // so Buffer has time to ingest and `prune` clears them later.
   if (env.deleteMinioOnPublish) {
     await deleteObject(video.objectName);

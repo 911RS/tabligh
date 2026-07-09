@@ -44,8 +44,9 @@ const html = buildScene({
   reciterName: reel.reciterName || 'Reciter', showBasmala: reel.hasBasmala, ayahs,
   durationMs: reel.durationMs, outroMs: 4200,
   logoDataUri: logoB64 ? 'data:image/png;base64,' + logoB64 : undefined,
-  handle: '@eQurany', showWatermark: false,
+  handle: '@yourhandle', showWatermark: false,
   outroText: 'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين',
+  fillColor: process.env.TEXT_FILL_COLOR ?? '#fed351', karaoke: true,
   seed: 7,
 });
 

@@ -38,6 +38,10 @@ export interface SceneParams {
   showWatermark: boolean;
   /** Outro sign-off text, used when there is no logo. */
   outroText?: string;
+  /** Color of already-recited (filled) karaoke text. */
+  fillColor: string;
+  /** Word-by-word karaoke fill (else the ayah shows fully filled). */
+  karaoke: boolean;
   seed: number;
 }
 
@@ -83,7 +87,7 @@ export function buildScene(p: SceneParams): string {
         ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
         : '';
 
-  const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length };
+  const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length, karaoke: p.karaoke };
   // Outro card: logo (only when the logo/watermark is enabled) stacked above the
   // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
   const endCardInner =
@@ -100,7 +104,7 @@ export function buildScene(p: SceneParams): string {
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuItalic}) format('truetype');font-weight:400;font-style:italic;font-display:block}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
-.bg{position:absolute;inset:-6%;${bgLayer}will-change:transform}
+.bg{position:absolute;inset:-4%;${bgLayer}will-change:transform}
 /* Strong cinematic overlay so white text stays readable on any photo */
 .scrim{position:absolute;inset:0;background:
   radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.30) 0%, rgba(4,7,10,.62) 58%, rgba(3,5,8,.86) 100%),
@@ -131,7 +135,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
   filter:drop-shadow(0 3px 20px rgba(0,0,0,.85))}
 /* Karaoke word fill: bright already-recited part, dim upcoming (RTL: fills from right) */
 .w{color:transparent;background-image:linear-gradient(to left, var(--on) var(--f,0%), var(--off) var(--f,0%));
-  -webkit-background-clip:text;background-clip:text;--on:#ffffff;--off:rgba(255,255,255,.42)}
+  -webkit-background-clip:text;background-clip:text;--on:${p.fillColor};--off:rgba(255,255,255,.42)}
 .trtext{font-family:'Ubuntu';font-weight:400;font-size:48px;line-height:1.4;color:rgba(255,255,255,.95);
   text-align:center;max-width:900px;text-shadow:0 2px 14px rgba(0,0,0,.8)}
 /* Reciter footer (bottom of safe band) */
@@ -184,10 +188,10 @@ let particles=[];
 window.__setup=function(){
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  for(let i=0;i<34;i++){
+  for(let i=0;i<46;i++){
     const el=document.createElement('div');el.className='p';
-    const size=6+rnd()*18;el.style.width=size+'px';el.style.height=size+'px';
-    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:12+rnd()*30,amp:16+rnd()*48,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.22+rnd()*0.45});
+    const size=5+rnd()*17;el.style.width=size+'px';el.style.height=size+'px';
+    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:11+rnd()*28,amp:16+rnd()*50,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.20+rnd()*0.5});
     host.appendChild(el);
   }
   // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
@@ -213,7 +217,8 @@ function envelope(ms,s,e){
 }
 window.__setTime=function(ms){
   const dur=CFG.duration, sec=ms/1000;
-  document.getElementById('bg').style.transform='scale('+(1+0.08*(ms/dur)).toFixed(4)+') translate('+(Math.sin(ms/9000)*10).toFixed(1)+'px,'+(-6*(ms/dur)).toFixed(1)+'px)';
+  // Very subtle slow zoom — no panning; the life comes from the particles.
+  document.getElementById('bg').style.transform='scale('+(1+0.05*(ms/dur)).toFixed(4)+')';
   document.getElementById('pfill').style.width=(Math.min(1,ms/dur)*1080).toFixed(1)+'px';
   for(const p of particles){
     let y=p.baseY-sec*p.speed;y=((y%1920)+1920)%1920;
@@ -235,10 +240,10 @@ window.__setTime=function(ms){
       kids[k].style.opacity=sf.toFixed(3);
       kids[k].style.transform='translateY('+((1-sf)*14).toFixed(1)+'px)';
     }
-    // Karaoke word fill (RTL right→left)
+    // Karaoke word fill (RTL right→left). When disabled, show fully filled.
     body.querySelectorAll('.w').forEach((w)=>{
       const ws=+w.dataset.s, we=+w.dataset.e;
-      const f=Math.max(0,Math.min(1,(ms-ws)/Math.max(1,we-ws)));
+      const f=CFG.karaoke ? Math.max(0,Math.min(1,(ms-ws)/Math.max(1,we-ws))) : 1;
       w.style.setProperty('--f',(f*100).toFixed(1)+'%');
     });
   });

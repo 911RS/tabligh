@@ -103,6 +103,8 @@ export async function renderFrames(
     handle: opts.handle,
     showWatermark: env.watermarkEnabled,
     outroText: env.outroText,
+    fillColor: env.textFillColor,
+    karaoke: env.karaokeEnabled,
     seed: opts.seed,
   });
 

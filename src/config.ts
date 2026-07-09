@@ -28,19 +28,25 @@ export const JobSchema = z.object({
 
 export type Job = z.infer<typeof JobSchema>;
 
+/** Split a comma-separated env value into a trimmed, non-empty id list. */
+const parseIds = (v: string | undefined): string[] =>
+  (v ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+
 /** Process-level env, validated once. */
 export const env = {
   quranApiBase: process.env.QURAN_API_BASE ?? 'https://api.alquran.cloud/v1',
   everyayahBase: process.env.EVERYAYAH_BASE ?? 'https://everyayah.com/data',
-  pexelsKey: process.env.CK2 ?? '',
-  unsplashKey: process.env.CK3 ?? '',
+  pexelsKey: process.env.PEXELS_API_KEY ?? '',
+  unsplashKey: process.env.UNSPLASH_ACCESS_KEY ?? '',
   puppeteerExecutablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-  soundsDir: process.env.SOCIAL_SOUNDS_DIR || undefined,
-  bufferToken: process.env.CK8 ?? '',
-  bufferTiktokChannelIds: (process.env.BUFFER_TIKTOK_CHANNEL_IDS ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean),
+  bufferToken: process.env.BUFFER_ACCESS_TOKEN ?? '',
+  // Buffer channel ids per platform — post to any/all you configure.
+  bufferChannels: {
+    tiktok: parseIds(process.env.BUFFER_TIKTOK_CHANNEL_IDS),
+    instagram: parseIds(process.env.BUFFER_INSTAGRAM_CHANNEL_IDS),
+    facebook: parseIds(process.env.BUFFER_FACEBOOK_CHANNEL_IDS),
+    youtube: parseIds(process.env.BUFFER_YOUTUBE_CHANNEL_IDS),
+  },
   minio: {
     endpoint: process.env.MINIO_ENDPOINT ?? '',
     port: Number(process.env.MINIO_PORT ?? '9000'),
@@ -63,6 +69,10 @@ export const env = {
   // HTTP server (serve mode): port + secret for the manual /trigger endpoint.
   port: Number(process.env.PORT ?? '3000'),
   triggerToken: process.env.TRIGGER_TOKEN ?? '',
+  // Karaoke word-by-word fill synced to the recitation.
+  karaokeEnabled: (process.env.KARAOKE_ENABLED ?? 'true') === 'true',
+  // Color of already-recited (filled) karaoke text; unfilled stays dim white.
+  textFillColor: process.env.TEXT_FILL_COLOR ?? '#ffffff',
   // Show the top-right corner watermark (logo/handle). The outro sign-off is
   // always shown regardless of this.
   watermarkEnabled: (process.env.WATERMARK_ENABLED ?? 'true') === 'true',

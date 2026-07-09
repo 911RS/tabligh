@@ -48,7 +48,7 @@ async function renderAndMaybePublish(job: Job, runTag: string, flags: Record<str
   log.ok(`Video → ${mp4}`);
   if (job.publish) {
     if (!isConfigured()) {
-      log.warn('Publish requested but Buffer is not configured (CK8 / BUFFER_TIKTOK_CHANNEL_IDS) — skipping publish; video kept locally.');
+      log.warn('Publish requested but Buffer is not configured (BUFFER_ACCESS_TOKEN / BUFFER_*_CHANNEL_IDS) — skipping publish; video kept locally.');
       return;
     }
     const ids = await publishReel(reel, mp4, {
