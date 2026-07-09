@@ -6,7 +6,7 @@ import { buildReelJob, renderReel } from '../pipeline.js';
 import { pickRandomJob } from '../random.js';
 import { publishReel, prune } from '../publish/index.js';
 import { isConfigured } from '../publish/buffer.js';
-import { addPost } from '../store/store.js';
+import { addPost, popQueueItem, settings } from '../store/store.js';
 import { log } from '../util/log.js';
 
 let busy = false;
@@ -43,7 +43,9 @@ export async function runJob(opts: { jobOverride?: Partial<Job>; publish: boolea
     if (opts.publish && isConfigured()) {
       lastStatus = 'publishing';
       const postIds = await publishReel(reel, mp4, { credit });
-      addPost({ ...base, status: 'published', postIds });
+      const chans = settings().publish.channels;
+      const platforms = (Object.keys(chans) as (keyof typeof chans)[]).filter((p) => chans[p].length);
+      addPost({ ...base, status: 'published', postIds, platforms });
       lastStatus = 'idle';
       return `Published ${base.key} → ${postIds.join(', ')}`;
     }
@@ -58,12 +60,17 @@ export async function runJob(opts: { jobOverride?: Partial<Job>; publish: boolea
   }
 }
 
-/** Scheduled production run: prune always, publish a random reel when configured. */
+/** Scheduled production run: prune always; queued passage first, else random. */
 export async function scheduledRun(): Promise<void> {
   try {
     await prune();
     if (!isConfigured()) { log.warn('Publisher not configured — skipping scheduled run.'); return; }
-    log.ok(await runJob({ publish: true }));
+    const next = popQueueItem();
+    const jobOverride = next
+      ? { surah: next.surah, ayahFrom: next.ayahFrom, ayahTo: next.ayahTo, ...(next.reciter ? { reciter: next.reciter } : {}) }
+      : undefined;
+    if (next) log.step(`From queue: ${next.surah}:${next.ayahFrom}-${next.ayahTo}`);
+    log.ok(await runJob({ jobOverride, publish: true }));
   } catch (e) {
     log.error(`Scheduled run failed: ${e instanceof Error ? e.message : e}`);
   }

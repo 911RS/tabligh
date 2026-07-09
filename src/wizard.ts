@@ -38,7 +38,7 @@ export async function runWizard(): Promise<void> {
     return a === 'y' || a === 'yes';
   };
 
-  console.log(`\n${C.g('🕌  Tabligh — setup')}\n${C.dim('   Answer a few questions. Press Enter to accept the default.')}\n`);
+  console.log(`\n${C.g('Tabligh — setup')}\n${C.dim('   Answer a few questions. Press Enter to accept the default.')}\n`);
 
   // ── Backgrounds ──────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Backgrounds (stock photos)'));

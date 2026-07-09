@@ -1,14 +1,40 @@
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
-import { statSync, createReadStream } from 'node:fs';
+import { statSync, createReadStream, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { env } from '../config.js';
 import {
   settings, updateSettings, secrets, updateSecrets, isSetupComplete, markSetupComplete, listPosts,
+  listQueue, addQueueItem, removeQueueItem,
 } from '../store/store.js';
 import { hashPassword, verifyPassword, signSession, verifySession, readCookie, SESSION_COOKIE } from '../auth.js';
 import { isConfigured, listChannels } from '../publish/buffer.js';
 import { runJob, isBusy, runnerStatus, findLatestVideo } from './runner.js';
-import { log } from '../util/log.js';
-import { PANEL_HTML } from './ui.js';
+import { log, recentLogs } from '../util/log.js';
+import { renderPanel } from './ui.js';
+
+let _html: string | null = null;
+/** Build the panel HTML once, embedding the vendored Ubuntu fonts. */
+function panelHtml(): string {
+  if (_html) return _html;
+  const F = (n: string) => readFileSync(join(process.cwd(), 'assets/fonts', n)).toString('base64');
+  _html = renderPanel({ regular: F('Ubuntu-Regular.ttf'), medium: F('Ubuntu-Medium.ttf'), bold: F('Ubuntu-Bold.ttf') });
+  return _html;
+}
+
+/** Aggregate stats from post history for the analytics view. */
+function computeStats() {
+  const posts = listPosts(2000);
+  const weekAgo = Date.now() - 7 * 86400_000;
+  const byPlatform: Record<string, number> = {};
+  let published = 0, failed = 0, week = 0;
+  for (const p of posts) {
+    if (p.status === 'published') { published++; for (const pf of p.platforms ?? []) byPlatform[pf] = (byPlatform[pf] ?? 0) + 1; }
+    if (p.status === 'failed') failed++;
+    if (Date.parse(p.ts) >= weekAgo) week++;
+  }
+  return { total: posts.length, published, failed, week, byPlatform };
+}
 
 function json(res: ServerResponse, code: number, body: unknown): void {
   const s = JSON.stringify(body);
@@ -118,6 +144,26 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   }
 
   if (path === '/api/history' && method === 'GET') return json(res, 200, listPosts(100));
+  if (path === '/api/stats' && method === 'GET') return json(res, 200, computeStats());
+  if (path === '/api/logs' && method === 'GET') return json(res, 200, recentLogs(200));
+
+  if (path === '/api/queue') {
+    if (method === 'GET') return json(res, 200, listQueue());
+    if (method === 'POST') {
+      const b = await readBody(req);
+      if (!b.surah) return json(res, 400, { error: 'surah required' });
+      addQueueItem({
+        id: randomBytes(5).toString('hex'), surah: Number(b.surah),
+        ayahFrom: Number(b.ayahFrom ?? 1), ayahTo: Number(b.ayahTo ?? b.ayahFrom ?? 1),
+        ...(b.reciter ? { reciter: String(b.reciter) } : {}),
+      });
+      return json(res, 200, { ok: true });
+    }
+  }
+  if (path === '/api/queue' && method === 'DELETE') {
+    removeQueueItem(new URL(req.url ?? '', 'http://x').searchParams.get('id') ?? '');
+    return json(res, 200, { ok: true });
+  }
 
   if (path === '/api/preview' && method === 'GET') {
     const file = findLatestVideo();
@@ -167,7 +213,7 @@ export function startServer(): void {
       if (legacy(req, res, url)) return;
       // Everything else → the single-page panel (client routes on setup/login/dashboard).
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(PANEL_HTML);
+      res.end(panelHtml());
     } catch (e) {
       json(res, 500, { error: e instanceof Error ? e.message : 'server error' });
     }

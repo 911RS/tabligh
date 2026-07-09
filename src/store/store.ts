@@ -62,12 +62,23 @@ export interface PostRecord {
   key: string; // surah:from-to for de-dup
 }
 
+export interface QueueItem {
+  id: string;
+  surah: number;
+  ayahFrom: number;
+  ayahTo: number;
+  reciter?: string;
+  addedAt: string;
+  note?: string;
+}
+
 export interface StoreData {
   version: number;
   setupComplete: boolean;
   settings: Settings;
   secrets: Secrets;
   posts: PostRecord[];
+  queue: QueueItem[];
 }
 
 const STORE_PATH = process.env.STORE_PATH || join(process.cwd(), 'data', 'store.json');
@@ -121,6 +132,7 @@ function seedFromEnv(): StoreData {
       triggerToken: env.triggerToken,
     },
     posts: [],
+    queue: [],
   };
 }
 
@@ -187,6 +199,30 @@ export function listPosts(limit = 100): PostRecord[] {
 /** Passages already posted (published) — for de-dup. */
 export function postedKeys(): Set<string> {
   return new Set(loadStore().posts.filter((p) => p.status === 'published').map((p) => p.key));
+}
+
+export function listQueue(): QueueItem[] {
+  return loadStore().queue ?? [];
+}
+export function addQueueItem(item: Omit<QueueItem, 'id' | 'addedAt'> & { id: string }): void {
+  const data = loadStore();
+  (data.queue ??= []).push({ ...item, addedAt: new Date().toISOString() });
+  saveStore(data);
+}
+export function removeQueueItem(id: string): void {
+  const data = loadStore();
+  data.queue = (data.queue ?? []).filter((q) => q.id !== id);
+  saveStore(data);
+}
+/** Remove and return the next queued item (FIFO), or null. */
+export function popQueueItem(): QueueItem | null {
+  const data = loadStore();
+  const q = data.queue ?? [];
+  if (!q.length) return null;
+  const item = q.shift()!;
+  data.queue = q;
+  saveStore(data);
+  return item;
 }
 
 // ── tiny deep-merge helpers ───────────────────────────────────────────────

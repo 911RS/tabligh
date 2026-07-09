@@ -1,5 +1,5 @@
 import { JobSchema, type Job } from './config.js';
-import { settings } from './store/store.js';
+import { settings, postedKeys } from './store/store.js';
 import { fetchSurahMeta } from './quran/quranApi.js';
 import { RECITERS } from './quran/reciters.js';
 import { log } from './util/log.js';
@@ -14,19 +14,23 @@ const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
  * but we also pick the full range here so the log/label is accurate.
  */
 export async function pickRandomJob(overrides: Partial<Job> = {}): Promise<Job> {
-  const surah = overrides.surah ?? randInt(1, 114);
-  const meta = await fetchSurahMeta(surah);
-
-  let ayahFrom: number;
-  let ayahTo: number;
-  if (meta.numberOfAyahs <= settings().content.fullSurahMaxAyahs) {
-    ayahFrom = 1;
-    ayahTo = meta.numberOfAyahs;
-  } else {
-    const maxLen = Math.min(settings().content.randomMaxAyahs, meta.numberOfAyahs);
-    const len = randInt(Math.min(settings().content.randomMinAyahs, maxLen), maxLen);
-    ayahFrom = randInt(1, meta.numberOfAyahs - len + 1);
-    ayahTo = ayahFrom + len - 1;
+  const posted = postedKeys();
+  let surah = 0, ayahFrom = 0, ayahTo = 0, englishName = '';
+  // Retry a few times to avoid re-posting a passage we've already published.
+  for (let attempt = 0; attempt < 14; attempt++) {
+    surah = overrides.surah ?? randInt(1, 114);
+    const meta = await fetchSurahMeta(surah);
+    englishName = meta.englishName;
+    if (meta.numberOfAyahs <= settings().content.fullSurahMaxAyahs) {
+      ayahFrom = 1;
+      ayahTo = meta.numberOfAyahs;
+    } else {
+      const maxLen = Math.min(settings().content.randomMaxAyahs, meta.numberOfAyahs);
+      const len = randInt(Math.min(settings().content.randomMinAyahs, maxLen), maxLen);
+      ayahFrom = randInt(1, meta.numberOfAyahs - len + 1);
+      ayahTo = ayahFrom + len - 1;
+    }
+    if (overrides.surah || !posted.has(`${surah}:${ayahFrom}-${ayahTo}`)) break;
   }
 
   const reciter = overrides.reciter ?? pick(RECITERS).id;
@@ -42,6 +46,6 @@ export async function pickRandomJob(overrides: Partial<Job> = {}): Promise<Job> 
     background: overrides.background,
   });
 
-  log.step(`Random pick → ${meta.englishName} ${surah}:${ayahFrom}-${ayahTo} · ${reciter}`);
+  log.step(`Random pick → ${englishName} ${surah}:${ayahFrom}-${ayahTo} · ${reciter}`);
   return job;
 }
