@@ -40,6 +40,8 @@ button{font-family:inherit;cursor:pointer}
 .nav.on{background:var(--goldd);color:var(--gold);border-color:rgba(254,211,81,.25)}
 .nav svg{opacity:.9}
 .spacer{flex:1}
+.credit{display:block;padding:12px 12px 2px;font-size:11px;color:var(--faint);letter-spacing:.3px}
+.credit:hover{color:var(--dim)}
 .main{padding:34px 40px;max-width:1080px;width:100%}
 .head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px}
 .head h1{font-size:23px;margin:0;letter-spacing:-.4px}.head p{margin:4px 0 0;color:var(--dim);font-size:13.5px}
@@ -107,7 +109,8 @@ const NAV=[['dashboard','Dashboard'],['generate','Generate'],['schedule','Settin
 function shell(active,title,desc,body){app.className='';app.innerHTML='';
   app.append(el(\`<div class="shell"><aside class="side"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div>
     \${NAV.map(([v,l])=>\`<button class="nav \${v===active?'on':''}" data-v="\${v}">\${IC[v]||''}<span>\${l}</span></button>\`).join('')}
-    <div class="spacer"></div><button class="nav" id="out">\${IC.history}<span>Sign out</span></button></aside>
+    <div class="spacer"></div><button class="nav" id="out">\${IC.history}<span>Sign out</span></button>
+    <a class="credit" href="https://github.com/911RS/tabligh" target="_blank" rel="noopener">github.com/911RS/tabligh</a></aside>
     <main class="main fade"><div class="head"><div><h1>\${title}</h1><p>\${desc||''}</p></div><div id="hact"></div></div><div id="body"></div></main></div>\`));
   document.getElementById('out').onclick=async()=>{await api('/api/logout','POST');location.reload()};
   app.querySelectorAll('.nav[data-v]').forEach(b=>b.onclick=()=>dash(b.dataset.v));

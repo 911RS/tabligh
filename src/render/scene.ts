@@ -90,9 +90,11 @@ export function buildScene(p: SceneParams): string {
   const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length, karaoke: p.karaoke };
   // Outro card: logo (only when the logo/watermark is enabled) stacked above the
   // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
+  // A small project credit sits subtly beneath it.
   const endCardInner =
     (p.showWatermark && p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
-    (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '');
+    (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '') +
+    `<div class="end-credit" dir="ltr">github.com/911RS/tabligh</div>`;
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
 <style>
@@ -158,6 +160,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .end-logo{width:300px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
 .end-text{font-family:'Kufi';font-weight:600;font-size:50px;line-height:1.9;color:#fff;text-align:center;
   direction:rtl;max-width:820px;padding:0 70px;filter:drop-shadow(0 3px 18px rgba(0,0,0,.7))}
+.end-credit{font-family:'Ubuntu';font-weight:400;font-size:24px;letter-spacing:1px;color:rgba(255,255,255,.32);margin-top:8px}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>

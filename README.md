@@ -74,8 +74,8 @@ Quran text + translation  ──►  everyayah per-ayah audio (exact timing)
 Requirements: **Node ≥ 20** and **ffmpeg** on your PATH. (Chromium is downloaded automatically by Puppeteer.)
 
 ```bash
-git clone https://github.com/2O23/quran-poster.git
-cd quran-poster
+git clone https://github.com/911RS/tabligh.git
+cd tabligh
 npm install
 cp .env.example .env        # fill in what you need (see below)
 
@@ -142,8 +142,8 @@ Each platform gets the right format automatically (Reel / Short). The caption in
 Build the container and run it anywhere Docker runs:
 
 ```bash
-docker build -t quran-poster .
-docker run -d --env-file .env quran-poster    # CMD is `serve`
+docker build -t tabligh .
+docker run -d --env-file .env tabligh    # CMD is `serve`
 ```
 
 `serve` starts:
