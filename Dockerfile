@@ -36,8 +36,13 @@ COPY --from=builder /app/dist ./dist
 COPY assets ./assets
 COPY examples ./examples
 
+# Persisted store (settings, panel password, queue, history) lives here. Declaring
+# it as a volume means Docker/Coolify persist it across redeploys automatically —
+# no manual volume setup needed. The app creates data/store.json on first boot.
+VOLUME ["/app/data"]
+
 # Always-on: self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
-# and serves /health + /trigger on this port.
+# and serves the control panel + /health on this port.
 EXPOSE 3000
 ENTRYPOINT ["node", "dist/cli.js"]
 CMD ["serve"]

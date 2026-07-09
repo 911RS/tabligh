@@ -1,0 +1,18 @@
+# Zero-config deploy: `docker compose up -d`.
+# The named volume below persists the store (settings, panel password, queue,
+# history) across restarts and rebuilds — you never create or "link" anything.
+services:
+  tabligh:
+    build: .
+    # or use a published image instead of build:
+    # image: ghcr.io/911rs/tabligh:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - tabligh-data:/app/data   # <- the store lives here, and it persists
+
+volumes:
+  tabligh-data:

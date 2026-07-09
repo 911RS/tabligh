@@ -139,20 +139,38 @@ Each platform gets the right format automatically (Reel / Short). The caption in
 
 ---
 
-## 🐳 Deployment (always-on scheduler)
+## 🐳 Deployment (always-on scheduler + control panel)
 
-Build the container and run it anywhere Docker runs:
+One command — persistence included, nothing to set up:
 
 ```bash
-docker build -t tabligh .
-docker run -d --env-file .env tabligh    # CMD is `serve`
+cp .env.example .env      # fill in your keys (optional — you can also do it in the panel)
+docker compose up -d      # scheduler + control panel, on http://localhost:3000
 ```
 
-`serve` starts:
-- an **internal scheduler** that renders + publishes at every `PUBLISH_TIMES` in your `TZ`;
-- a tiny **HTTP server** exposing `GET /health` and a secured **`GET /trigger?key=<TRIGGER_TOKEN>`** to fire a run on demand (great for testing). Add `&surah=2&from=255&to=257&reciter=husary` to pick a passage, or `&publish=false` to render only.
+That's it. On first boot the app **creates its own config store** at `data/store.json`
+(seeded from your `.env`) — you never create or "link" anything. The bundled
+`docker-compose.yml` mounts a named volume at `/app/data`, so your settings, panel
+password, queue and history **persist across restarts and rebuilds** automatically.
 
-On **Coolify / Railway / Fly**: point it at this repo with the Dockerfile build pack, set the env vars, and deploy. That's it.
+`serve` (the default command) starts:
+- a **control panel** at `/` — password-protected; manage settings, generate/preview a
+  reel, post now, browse history/analytics, and queue passages. Change anything live,
+  no redeploy.
+- an **internal scheduler** that renders + publishes at every `PUBLISH_TIMES` in your `TZ`;
+- `GET /health` and a token-secured `GET /trigger?key=<TRIGGER_TOKEN>` for scripting.
+
+**Config lives in the store after first boot** (so the panel can edit it live). `.env` only
+*seeds* it once — to change things later, use the panel (or `tabligh set-password` to reset
+the password). Delete `data/store.json` to re-seed from `.env`.
+
+**On Coolify / Railway / Fly:** point it at this repo. If you deploy the **`docker-compose.yml`**,
+the volume is created for you — zero manual steps. If you use the plain **Dockerfile**, the
+`VOLUME /app/data` line makes most platforms persist it automatically; on Coolify you can also
+add one Persistent Storage mounted at `/app/data`. Set your env vars and deploy.
+
+First run with no CLI? Just open the panel — it shows a **setup screen** to create your
+password. Prefer the terminal? Run **`tabligh init`** for an interactive wizard.
 
 ---
 
