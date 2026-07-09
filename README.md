@@ -33,7 +33,7 @@ Pick nothing. A scheduler chooses a random surah + passage, pulls the exact reci
 
 - 🎬 **Cinematic 1080×1920 reels** — full-bleed stock photo background (Pexels/Unsplash) with a strong legibility overlay, subtle drifting particles, and a slow Ken-Burns drift.
 - 🎤 **Karaoke word-fill** — each word brightens in sync with the recitation (right→left), so viewers follow along.
-- 🖋️ **Authentic Arabic typography** — full Uthmani text with correct *shakl* in **Aref Ruqaa** calligraphy; translations in a clean sans.
+- 🖋️ **Authentic Arabic typography** — full Uthmani text with correct *shakl* in the clean modern **Mada** face; headers in **Aref Ruqaa** calligraphy.
 - 🎯 **Exact sync, zero AI** — audio comes from [everyayah.com](https://everyayah.com) as per-ayah files, so each ayah's timing is exact and free (no transcription).
 - 🔀 **Auto content selection** — random surah + a random consecutive passage (configurable length); short surahs render in full.
 - 🌇 **Safe, tasteful backgrounds** — a curated 50-keyword pool (mosques, nature, sea, sky…) plus a filter that drops any photo containing people or anything unsuitable.
@@ -107,7 +107,7 @@ Everything is driven by environment variables (`.env`). All are optional except 
 | `BUFFER_INSTAGRAM_CHANNEL_IDS` | Instagram Reels channel ids | _(empty)_ |
 | `BUFFER_FACEBOOK_CHANNEL_IDS` | Facebook Reels channel ids | _(empty)_ |
 | `BUFFER_YOUTUBE_CHANNEL_IDS` | YouTube Shorts channel ids | _(empty)_ |
-| `MINIO_*` | S3-compatible storage (public bucket Buffer fetches from) | bucket `quran-poster`, port `9000` |
+| `MINIO_*` | S3-compatible storage (public bucket Buffer fetches from) | bucket `tabligh`, port `9000` |
 | `TZ` / `PUBLISH_TIMES` | Timezone + times of day to auto-post | `Africa/Tunis` / `07:00,13:00,19:00` |
 | `KARAOKE_ENABLED` | Word-by-word fill synced to recitation | `true` |
 | `TEXT_FILL_COLOR` | Color of the recited (filled) text | `#ffffff` |
@@ -188,7 +188,7 @@ password. Prefer the terminal? Run **`tabligh init`** for an interactive wizard.
 
 - Recitations: **[everyayah.com](https://everyayah.com)** · Text & translations: **[alquran.cloud](https://alquran.cloud)**
 - Backgrounds: **[Pexels](https://pexels.com)** / **[Unsplash](https://unsplash.com)** (credited in every caption)
-- Fonts: **Aref Ruqaa**, **Reem Kufi**, **Ubuntu** (SIL OFL / UFL)
+- Fonts: **Mada** (ayah body), **Aref Ruqaa** (headers), **Reem Kufi** (outro), **Ubuntu** (UI) (SIL OFL / UFL)
 - Rendering: **Puppeteer** + **ffmpeg**
 
 ## 📜 License

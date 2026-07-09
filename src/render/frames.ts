@@ -56,9 +56,10 @@ export async function renderFrames(
   const framesDir = join(reel.workDir, 'frames');
   await mkdir(framesDir, { recursive: true });
 
-  const [arefRegular, arefBold, reemBase64, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
+  const [arefRegular, arefBold, madaBold, reemBase64, ubuntuRegular, ubuntuMedium, ubuntuItalic] = await Promise.all([
     readFile(FONT('ArefRuqaa-Regular.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('ArefRuqaa-Bold.ttf')).then((b) => b.toString('base64')),
+    readFile(FONT('Mada-Bold.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('ReemKufiFun.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Regular.ttf')).then((b) => b.toString('base64')),
     readFile(FONT('Ubuntu-Medium.ttf')).then((b) => b.toString('base64')),
@@ -87,6 +88,7 @@ export async function renderFrames(
   const html = buildScene({
     arefRegular,
     arefBold,
+    madaBold,
     reemBase64,
     ubuntuRegular,
     ubuntuMedium,
@@ -106,6 +108,8 @@ export async function renderFrames(
     outroText: settings().branding.outroText,
     fillColor: settings().branding.textFillColor,
     karaoke: settings().branding.karaokeEnabled,
+    particles: settings().branding.particlesEnabled,
+    bgAnimation: settings().branding.bgAnimationEnabled,
     seed: opts.seed,
   });
 

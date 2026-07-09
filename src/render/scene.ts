@@ -18,6 +18,8 @@ export interface SceneAyah {
 export interface SceneParams {
   arefRegular: string;
   arefBold: string;
+  /** Mada (variable) — used for the ayah body text. */
+  madaBold: string;
   /** Reem Kufi Fun — used for the outro ṣalawāt sign-off. */
   reemBase64: string;
   ubuntuRegular: string;
@@ -42,6 +44,10 @@ export interface SceneParams {
   fillColor: string;
   /** Word-by-word karaoke fill (else the ayah shows fully filled). */
   karaoke: boolean;
+  /** Drifting particle glints. */
+  particles: boolean;
+  /** Animated background zoom/breathing. */
+  bgAnimation: boolean;
   seed: number;
 }
 
@@ -87,34 +93,39 @@ export function buildScene(p: SceneParams): string {
         ? `<div class="wm-handle" dir="ltr">${esc(p.handle)}</div>`
         : '';
 
-  const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length, karaoke: p.karaoke };
+  const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length, karaoke: p.karaoke, particles: p.particles, bgAnimation: p.bgAnimation };
   // Outro card: logo (only when the logo/watermark is enabled) stacked above the
   // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
   // A small project credit sits subtly beneath it.
+  const ghIcon = `<svg class="gh" viewBox="0 0 16 16" width="34" height="34" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>`;
   const endCardInner =
     (p.showWatermark && p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
     (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '') +
-    `<div class="end-credit" dir="ltr">github.com/911RS/tabligh</div>`;
+    `<div class="end-foot" dir="ltr">
+       <div class="end-sep"></div>
+       <div class="end-project">Check the <b>Tabligh</b> project</div>
+       <div class="end-credit">${ghIcon}<span>github.com/911RS/tabligh</span></div>
+     </div>`;
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
 <style>
 @font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefRegular}) format('truetype');font-weight:400;font-display:block}
 @font-face{font-family:'Aref';src:url(data:font/ttf;base64,${p.arefBold}) format('truetype');font-weight:700;font-display:block}
+@font-face{font-family:'Mada';src:url(data:font/ttf;base64,${p.madaBold}) format('truetype');font-weight:300 900;font-display:block}
 @font-face{font-family:'Kufi';src:url(data:font/ttf;base64,${p.reemBase64}) format('truetype');font-weight:400 700;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuRegular}) format('truetype');font-weight:400;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuMedium}) format('truetype');font-weight:500;font-display:block}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${p.ubuntuItalic}) format('truetype');font-weight:400;font-style:italic;font-display:block}
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
-.bg{position:absolute;inset:-4%;${bgLayer}will-change:transform}
+.bg{position:absolute;inset:-8%;${bgLayer}will-change:transform}
 /* Strong cinematic overlay so white text stays readable on any photo */
 .scrim{position:absolute;inset:0;background:
   radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.30) 0%, rgba(4,7,10,.62) 58%, rgba(3,5,8,.86) 100%),
   linear-gradient(180deg, rgba(3,5,8,.78) 0%, rgba(3,5,8,.34) 22%, rgba(3,5,8,.44) 58%, rgba(3,5,8,.86) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.p{position:absolute;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,255,255,1) 0%,rgba(255,255,255,.55) 42%,rgba(255,255,255,0) 72%);
-  box-shadow:0 0 12px rgba(255,255,255,.4);will-change:transform,opacity}
+.p{position:absolute;border-radius:50%;background:#fff;
+  box-shadow:0 0 6px 1px rgba(255,255,255,.9),0 0 2px rgba(255,255,255,1);will-change:transform,opacity}
 .ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
 .pfill{position:absolute;top:0;left:0;height:6px;width:0;background:${p.fillColor};box-shadow:0 0 12px ${p.fillColor}}
 .safe{position:absolute;left:${SAFE.side}px;right:${SAFE.side}px;top:${SAFE.top}px;bottom:${SAFE.bottom}px}
@@ -135,7 +146,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .num{width:82px;height:82px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.95);color:#0c0f14;font-family:'Aref';font-weight:700;font-size:36px;
   box-shadow:0 4px 18px rgba(0,0,0,.5)}
-.artext{font-family:'Aref';font-weight:700;font-size:150px;line-height:1.7;text-align:center;direction:rtl;
+.artext{font-family:'Mada';font-weight:700;font-size:132px;line-height:1.65;text-align:center;direction:rtl;
   filter:drop-shadow(0 3px 20px rgba(0,0,0,.85))}
 /* Karaoke word fill: bright already-recited part, dim upcoming (RTL: fills from right) */
 .w{color:transparent;background-image:linear-gradient(to left, var(--on) var(--f,0%), var(--off) var(--f,0%));
@@ -160,7 +171,13 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .end-logo{width:300px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
 .end-text{font-family:'Kufi';font-weight:600;font-size:50px;line-height:1.9;color:#fff;text-align:center;
   direction:rtl;max-width:820px;padding:0 70px;filter:drop-shadow(0 3px 18px rgba(0,0,0,.7))}
-.end-credit{font-family:'Ubuntu';font-weight:400;font-size:24px;letter-spacing:1px;color:rgba(255,255,255,.32);margin-top:8px}
+.end-foot{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:8px}
+.end-sep{width:170px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,${p.fillColor},transparent);opacity:.8}
+.end-project{font-family:'Ubuntu';font-weight:500;font-size:36px;color:rgba(255,255,255,.78);letter-spacing:.3px}
+.end-project b{color:${p.fillColor};font-weight:700}
+.end-credit{display:flex;align-items:center;gap:14px;font-family:'Ubuntu';font-weight:500;font-size:32px;
+  letter-spacing:.6px;color:rgba(255,255,255,.82);filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+.end-credit .gh{opacity:.9;flex:none}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
@@ -185,18 +202,19 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
   <div class="endcard" id="endcard">${endCardInner}</div>
 <script>
 const CFG = ${JSON.stringify(cfg)};
-const F = 380;            // sequential ayah fade in/out (no cross-ayah overlap)
-const STAGGER = 180;      // ms between each element's reveal within an ayah
-const CHILD_FADE = 380;   // ms for a single element to fade/slide in
+const F = 300;            // sequential ayah fade in/out (no cross-ayah overlap)
+const STAGGER = 260;      // ms between each element's reveal within an ayah
+const CHILD_FADE = 460;   // ms for a single element to fade/slide in
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 let particles=[];
 window.__setup=function(){
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  for(let i=0;i<50;i++){
+  for(let i=0;CFG.particles&&i<70;i++){
     const el=document.createElement('div');el.className='p';
-    const size=9+rnd()*30;el.style.width=size+'px';el.style.height=size+'px';
-    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:11+rnd()*28,amp:16+rnd()*50,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.4+rnd()*0.5});
+    // Small, crisp glints (2–6px) — sharp cores with a tight glow, not soft blobs.
+    const size=2+rnd()*4;el.style.width=size+'px';el.style.height=size+'px';
+    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:9+rnd()*22,amp:14+rnd()*44,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.45+rnd()*0.5,tw:0.7+rnd()*1.4});
     host.appendChild(el);
   }
   // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
@@ -222,14 +240,16 @@ function envelope(ms,s,e){
 }
 window.__setTime=function(ms){
   const dur=CFG.duration, sec=ms/1000;
-  // Very subtle slow zoom — no panning; the life comes from the particles.
-  document.getElementById('bg').style.transform='scale('+(1+0.05*(ms/dur)).toFixed(4)+')';
+  // Animated background: a slow cinematic zoom-in plus a gentle breathing pulse
+  // (no panning). Overscan (.bg inset) hides the scaled edges.
+  const zoom=CFG.bgAnimation ? 1+0.11*(ms/dur)+0.014*Math.sin(sec*0.5) : 1.02;
+  document.getElementById('bg').style.transform='scale('+zoom.toFixed(4)+')';
   document.getElementById('pfill').style.width=(Math.min(1,ms/dur)*1080).toFixed(1)+'px';
   for(const p of particles){
     let y=p.baseY-sec*p.speed;y=((y%1920)+1920)%1920;
     const x=p.x+Math.sin(sec*p.drift+p.phase)*p.amp;
     p.el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
-    p.el.style.opacity=(p.op*(0.7+0.3*Math.sin(sec*1.3+p.phase))).toFixed(3);
+    p.el.style.opacity=(p.op*(0.5+0.5*Math.sin(sec*p.tw+p.phase))).toFixed(3);
   }
   document.querySelectorAll('.ayah').forEach((el)=>{
     const s=+el.dataset.start, e=+el.dataset.end;
@@ -243,7 +263,7 @@ window.__setTime=function(ms){
     for(let k=0;k<kids.length;k++){
       const sf=Math.max(0,Math.min(1,(ms-s-k*STAGGER)/CHILD_FADE));
       kids[k].style.opacity=sf.toFixed(3);
-      kids[k].style.transform='translateY('+((1-sf)*14).toFixed(1)+'px)';
+      kids[k].style.transform='translateY('+((1-sf)*46).toFixed(1)+'px)';
     }
     // Karaoke word fill (RTL right→left). When disabled, show fully filled.
     body.querySelectorAll('.w').forEach((w)=>{

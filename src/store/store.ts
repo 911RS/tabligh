@@ -30,6 +30,10 @@ export interface Settings {
     textFillColor: string;
     karaokeEnabled: boolean;
     outroText: string;
+    /** Drifting particle glints over the video. */
+    particlesEnabled: boolean;
+    /** Slow cinematic background zoom/breathing. */
+    bgAnimationEnabled: boolean;
   };
   publish: {
     channels: { tiktok: string[]; instagram: string[]; facebook: string[]; youtube: string[] };
@@ -112,6 +116,8 @@ function seedFromEnv(): StoreData {
         textFillColor: env.textFillColor,
         karaokeEnabled: env.karaokeEnabled,
         outroText: env.outroText,
+        particlesEnabled: env.particlesEnabled,
+        bgAnimationEnabled: env.bgAnimationEnabled,
       },
       publish: {
         channels: {
