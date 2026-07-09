@@ -72,7 +72,7 @@ export const env = {
   // Karaoke word-by-word fill synced to the recitation.
   karaokeEnabled: (process.env.KARAOKE_ENABLED ?? 'true') === 'true',
   // Color of already-recited (filled) karaoke text; unfilled stays dim white.
-  textFillColor: process.env.TEXT_FILL_COLOR ?? '#ffffff',
+  textFillColor: process.env.TEXT_FILL_COLOR || '#ffffff',
   // Show the top-right corner watermark (logo/handle). The outro sign-off is
   // always shown regardless of this.
   watermarkEnabled: (process.env.WATERMARK_ENABLED ?? 'true') === 'true',

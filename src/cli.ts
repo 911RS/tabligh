@@ -104,15 +104,15 @@ async function main() {
       break;
     }
     default:
-      console.log(`quran-poster
+      console.log(`tabligh
 
 Usage:
-  quran-poster fetch  --surah 55 --from 1 --to 5 [--reciter husary] [--translation en.sahih]
-  quran-poster render --surah 112 --from 1 --to 4 [--reciter husary] [--watermark @handle] [--publish]
-  quran-poster random [--publish] [--mode addToQueue|shareNow|customScheduled] [--due <ISO>]
-  quran-poster auto                 # cron: prune → random → publish
-  quran-poster prune                # remove stale MinIO objects + old work dirs
-  quran-poster channels             # list Buffer channels (find your TikTok id)
+  tabligh fetch  --surah 55 --from 1 --to 5 [--reciter husary] [--translation en.sahih]
+  tabligh render --surah 112 --from 1 --to 4 [--reciter husary] [--watermark @handle] [--publish]
+  tabligh random [--publish] [--mode addToQueue|shareNow|customScheduled] [--due <ISO>]
+  tabligh auto                 # cron: prune → random → publish
+  tabligh prune                # remove stale MinIO objects + old work dirs
+  tabligh channels             # list Buffer channels (find your TikTok id)
 
 Commands:
   fetch     Fetch text + per-ayah audio, compute exact timing, write ir.json

@@ -1,11 +1,11 @@
 {
-  "name": "quran-poster",
+  "name": "tabligh",
   "version": "0.1.0",
   "private": true,
-  "description": "Auto-generate synced Quran reels and publish to TikTok via Buffer",
+  "description": "Tabligh \u2014 auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
   "type": "module",
   "bin": {
-    "quran-poster": "dist/cli.js"
+    "tabligh": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx src/cli.ts",

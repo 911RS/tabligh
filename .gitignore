@@ -6,3 +6,6 @@ work/
 .env.local
 .DS_Store
 
+
+# Persisted store (contains secrets) — never commit
+data/

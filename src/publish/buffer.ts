@@ -1,4 +1,4 @@
-import { env } from '../config.js';
+import { secrets, settings } from '../store/store.js';
 import { log } from '../util/log.js';
 
 const BUFFER_API = 'https://api.buffer.com';
@@ -8,15 +8,15 @@ export type Platform = 'tiktok' | 'instagram' | 'facebook' | 'youtube';
 /** All configured channel ids across every platform. */
 function allChannels(): { id: string; platform: Platform }[] {
   const out: { id: string; platform: Platform }[] = [];
-  (Object.keys(env.bufferChannels) as Platform[]).forEach((platform) => {
-    for (const id of env.bufferChannels[platform]) out.push({ id, platform });
+  (Object.keys(settings().publish.channels) as Platform[]).forEach((platform) => {
+    for (const id of settings().publish.channels[platform]) out.push({ id, platform });
   });
   return out;
 }
 
 /** True when a Buffer token and at least one channel (any platform) are set. */
 export function isConfigured(): boolean {
-  return Boolean(env.bufferToken) && allChannels().length > 0;
+  return Boolean(secrets().bufferToken) && allChannels().length > 0;
 }
 
 /** Per-service metadata so each platform posts the video as a Reel/Short. */
@@ -31,12 +31,12 @@ function metadataFor(platform: Platform, title: string): Record<string, unknown>
 
 /** POST a GraphQL query to Buffer's Publish API. */
 async function gql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
-  if (!env.bufferToken) throw new Error('BUFFER_ACCESS_TOKEN not set — cannot publish');
+  if (!secrets().bufferToken) throw new Error('BUFFER_ACCESS_TOKEN not set — cannot publish');
   const res = await fetch(BUFFER_API, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.bufferToken}`,
+      Authorization: `Bearer ${secrets().bufferToken}`,
     },
     body: JSON.stringify({ query, variables }),
   });

@@ -1,6 +1,9 @@
 <div align="center">
 
-# 🕌 Quran Poster
+# 🕌 Tabligh
+
+### بَلِّغُوا عَنِّي وَلَوْ آيَةً
+_"Convey from me, even one verse."_ — Prophet Muhammad ﷺ (Bukhari)
 
 **Auto-generate cinematic, karaoke-synced Quran reels and publish them to TikTok, Instagram, Facebook & YouTube — on a schedule, hands-free.**
 

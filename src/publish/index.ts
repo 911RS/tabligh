@@ -1,6 +1,6 @@
 import { rm, readdir, stat } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { env } from '../config.js';
+import { settings, secrets } from '../store/store.js';
 import { log } from '../util/log.js';
 import type { ReelJob } from '../types.js';
 import { extractThumbnail } from '../video/thumbnail.js';
@@ -73,7 +73,7 @@ export async function publishReel(reel: ReelJob, mp4Path: string, opts: PublishO
   // Immediate cleanup after a successful post: local work dir + (optionally) the
   // MinIO objects. If posts come out empty, set DELETE_MINIO_ON_PUBLISH=false
   // so Buffer has time to ingest and `prune` clears them later.
-  if (env.deleteMinioOnPublish) {
+  if (settings().publish.deleteMinioOnPublish) {
     await deleteObject(video.objectName);
     await deleteObject(thumbUp.objectName);
     log.ok('Deleted MinIO video + thumbnail (immediate post-publish cleanup)');
@@ -93,9 +93,9 @@ export async function prune(): Promise<void> {
   const now = Date.now();
 
   // MinIO objects (only if configured)
-  if (env.minio.endpoint) {
+  if (secrets().minio.endpoint) {
     try {
-      const stale = await listStaleObjects(env.minioRetentionHours * 3600_000, now);
+      const stale = await listStaleObjects(settings().publish.minioRetentionHours * 3600_000, now);
       for (const obj of stale) await deleteObject(obj);
       log.ok(`Pruned ${stale.length} stale MinIO object(s)`);
     } catch (e) {
@@ -105,7 +105,7 @@ export async function prune(): Promise<void> {
 
   // Local work dirs
   const workRoot = join(process.cwd(), 'work');
-  const cutoff = now - env.retentionDays * 86_400_000;
+  const cutoff = now - settings().cleanup.retentionDays * 86_400_000;
   let removed = 0;
   try {
     for (const name of await readdir(workRoot)) {

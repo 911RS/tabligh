@@ -1,4 +1,5 @@
-import { env, JobSchema, type Job } from './config.js';
+import { JobSchema, type Job } from './config.js';
+import { settings } from './store/store.js';
 import { fetchSurahMeta } from './quran/quranApi.js';
 import { RECITERS } from './quran/reciters.js';
 import { log } from './util/log.js';
@@ -18,12 +19,12 @@ export async function pickRandomJob(overrides: Partial<Job> = {}): Promise<Job> 
 
   let ayahFrom: number;
   let ayahTo: number;
-  if (meta.numberOfAyahs <= env.fullSurahMaxAyahs) {
+  if (meta.numberOfAyahs <= settings().content.fullSurahMaxAyahs) {
     ayahFrom = 1;
     ayahTo = meta.numberOfAyahs;
   } else {
-    const maxLen = Math.min(env.randomMaxAyahs, meta.numberOfAyahs);
-    const len = randInt(Math.min(env.randomMinAyahs, maxLen), maxLen);
+    const maxLen = Math.min(settings().content.randomMaxAyahs, meta.numberOfAyahs);
+    const len = randInt(Math.min(settings().content.randomMinAyahs, maxLen), maxLen);
     ayahFrom = randInt(1, meta.numberOfAyahs - len + 1);
     ayahTo = ayahFrom + len - 1;
   }

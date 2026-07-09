@@ -2,21 +2,18 @@ import http from 'node:http';
 import { readdirSync, statSync, existsSync, createReadStream } from 'node:fs';
 import { join } from 'node:path';
 import { env, JobSchema, type Job } from './config.js';
+import { settings, secrets } from './store/store.js';
 import { buildReelJob, renderReel } from './pipeline.js';
 import { pickRandomJob } from './random.js';
 import { publishReel, prune } from './publish/index.js';
 import { isConfigured } from './publish/buffer.js';
 import { log } from './util/log.js';
 
-const TZ = process.env.TZ || 'Africa/Tunis';
-const TIMES = (process.env.PUBLISH_TIMES || '07:00,13:00,19:00')
-  .split(',').map((s) => s.trim()).filter(Boolean);
-
 let busy = false; // guard: only one heavy render/publish at a time
 
-function nowParts(): { hm: string; day: string } {
+function nowParts(tz: string): { hm: string; day: string } {
   const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: TZ, hour12: false,
+    timeZone: tz, hour12: false,
     year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
   });
   const p = Object.fromEntries(fmt.formatToParts(new Date()).map((x) => [x.type, x.value]));
@@ -92,12 +89,12 @@ function startHttp(): void {
       // Root + /health return 200 so the platform proxy sees a healthy backend.
       if (url.pathname === '/' || url.pathname === '/health') {
         res.writeHead(200, { 'content-type': 'text/plain' });
-        res.end('quran-poster ok');
+        res.end('tabligh ok');
         return;
       }
       if (url.pathname === '/trigger') {
         const key = url.searchParams.get('key') ?? req.headers['x-trigger-key'];
-        if (!env.triggerToken || key !== env.triggerToken) {
+        if (!secrets().triggerToken || key !== secrets().triggerToken) {
           res.writeHead(401); res.end('unauthorized'); return;
         }
         if (busy) { res.writeHead(409); res.end('a run is already in progress'); return; }
@@ -120,7 +117,7 @@ function startHttp(): void {
       }
       if (url.pathname === '/last') {
         const key = url.searchParams.get('key') ?? req.headers['x-trigger-key'];
-        if (!env.triggerToken || key !== env.triggerToken) {
+        if (!secrets().triggerToken || key !== secrets().triggerToken) {
           res.writeHead(401); res.end('unauthorized'); return;
         }
         const file = findLatestVideo();
@@ -136,21 +133,25 @@ function startHttp(): void {
       }
       res.writeHead(404); res.end('not found');
     })
-    .listen(env.port, () => log.ok(`HTTP on :${env.port} (/health, /trigger${env.triggerToken ? '' : ' DISABLED — set TRIGGER_TOKEN'})`));
+    .listen(env.port, () => log.ok(`HTTP on :${env.port} (/health, /trigger${secrets().triggerToken ? '' : ' DISABLED — set TRIGGER_TOKEN'})`));
 }
 
 /** Long-running entrypoint: HTTP server + wall-clock scheduler. */
 export async function serve(): Promise<void> {
-  log.ok(`serve up · TZ=${TZ} · times=[${TIMES.join(', ')}] · publish=${isConfigured() ? 'on' : 'OFF (no Buffer creds)'}`);
+  const s0 = settings().schedule;
+  log.ok(`serve up · TZ=${s0.tz} · times=[${s0.times.join(', ')}] · publish=${isConfigured() ? 'on' : 'OFF (no Buffer creds)'}`);
   startHttp();
   let lastFired = '';
   for (;;) {
-    const { hm, day } = nowParts();
-    const slot = `${day} ${hm}`;
-    if (TIMES.includes(hm) && lastFired !== slot) {
-      lastFired = slot;
-      log.step(`Trigger ${hm} ${TZ}`);
-      await scheduledRun();
+    const sch = settings().schedule; // live — panel edits apply immediately
+    if (sch.enabled) {
+      const { hm, day } = nowParts(sch.tz);
+      const slot = `${day} ${hm}`;
+      if (sch.times.includes(hm) && lastFired !== slot) {
+        lastFired = slot;
+        log.step(`Trigger ${hm} ${sch.tz}`);
+        await scheduledRun();
+      }
     }
     await new Promise((r) => setTimeout(r, 30_000));
   }

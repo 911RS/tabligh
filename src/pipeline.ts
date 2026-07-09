@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { env, type Job } from './config.js';
+import { type Job } from './config.js';
+import { settings } from './store/store.js';
 import { resolveReciter, reciterDisplayName } from './quran/reciters.js';
 import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
 import { downloadTimedAyahs, concatAudio } from './quran/audio.js';
@@ -30,7 +31,7 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   // Effective range: clamp to the surah, and if the surah is short, render it whole.
   let ayahFrom = job.ayahFrom;
   let ayahTo = Math.min(job.ayahTo, surahMeta.numberOfAyahs);
-  const maxFull = env.fullSurahMaxAyahs;
+  const maxFull = settings().content.fullSurahMaxAyahs;
   if (maxFull > 0 && surahMeta.numberOfAyahs <= maxFull) {
     ayahFrom = 1;
     ayahTo = surahMeta.numberOfAyahs;

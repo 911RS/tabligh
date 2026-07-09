@@ -1,4 +1,4 @@
-import { env } from '../config.js';
+import { secrets } from '../store/store.js';
 import { log } from '../util/log.js';
 import { BACKGROUND_KEYWORDS, altIsSafe } from './keywords.js';
 
@@ -43,9 +43,9 @@ async function fetchAsDataUri(url: string): Promise<string> {
 interface Found { imgUrl: string; credit: PhotoCredit }
 
 async function searchPexels(query: string): Promise<Found | null> {
-  if (!env.pexelsKey) return null;
+  if (!secrets().pexelsKey) return null;
   const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=20&orientation=portrait`;
-  const res = await fetch(url, { headers: { Authorization: env.pexelsKey } });
+  const res = await fetch(url, { headers: { Authorization: secrets().pexelsKey } });
   if (!res.ok) return null;
   const body = (await res.json()) as {
     photos?: { src: { portrait?: string; large2x?: string; large?: string; original: string }; photographer: string; url: string; alt?: string }[];
@@ -60,9 +60,9 @@ async function searchPexels(query: string): Promise<Found | null> {
 }
 
 async function searchUnsplash(query: string): Promise<Found | null> {
-  if (!env.unsplashKey) return null;
+  if (!secrets().unsplashKey) return null;
   const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=20&orientation=portrait`;
-  const res = await fetch(url, { headers: { Authorization: `Client-ID ${env.unsplashKey}` } });
+  const res = await fetch(url, { headers: { Authorization: `Client-ID ${secrets().unsplashKey}` } });
   if (!res.ok) return null;
   const body = (await res.json()) as {
     results?: { urls: { regular?: string; full: string }; user: { name: string }; links: { html: string }; alt_description?: string }[];

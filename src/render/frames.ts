@@ -2,6 +2,7 @@ import { mkdir, readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import puppeteer, { type Browser } from 'puppeteer';
 import { env } from '../config.js';
+import { settings } from '../store/store.js';
 import { log } from '../util/log.js';
 import type { ReelJob } from '../types.js';
 import type { Background } from './background.js';
@@ -101,10 +102,10 @@ export async function renderFrames(
     outroMs: OUTRO_MS,
     logoDataUri,
     handle: opts.handle,
-    showWatermark: env.watermarkEnabled,
-    outroText: env.outroText,
-    fillColor: env.textFillColor,
-    karaoke: env.karaokeEnabled,
+    showWatermark: settings().branding.watermarkEnabled,
+    outroText: settings().branding.outroText,
+    fillColor: settings().branding.textFillColor,
+    karaoke: settings().branding.karaokeEnabled,
     seed: opts.seed,
   });
 
