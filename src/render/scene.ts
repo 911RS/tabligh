@@ -110,7 +110,9 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
   radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.30) 0%, rgba(4,7,10,.62) 58%, rgba(3,5,8,.86) 100%),
   linear-gradient(180deg, rgba(3,5,8,.78) 0%, rgba(3,5,8,.34) 22%, rgba(3,5,8,.44) 58%, rgba(3,5,8,.86) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 70%);will-change:transform,opacity}
+.p{position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,255,255,1) 0%,rgba(255,255,255,.55) 42%,rgba(255,255,255,0) 72%);
+  box-shadow:0 0 12px rgba(255,255,255,.4);will-change:transform,opacity}
 .ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
 .pfill{position:absolute;top:0;left:0;height:6px;width:0;background:${p.fillColor};box-shadow:0 0 12px ${p.fillColor}}
 .safe{position:absolute;left:${SAFE.side}px;right:${SAFE.side}px;top:${SAFE.top}px;bottom:${SAFE.bottom}px}
@@ -188,10 +190,10 @@ let particles=[];
 window.__setup=function(){
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  for(let i=0;i<46;i++){
+  for(let i=0;i<50;i++){
     const el=document.createElement('div');el.className='p';
-    const size=5+rnd()*17;el.style.width=size+'px';el.style.height=size+'px';
-    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:11+rnd()*28,amp:16+rnd()*50,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.20+rnd()*0.5});
+    const size=9+rnd()*30;el.style.width=size+'px';el.style.height=size+'px';
+    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:11+rnd()*28,amp:16+rnd()*50,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.4+rnd()*0.5});
     host.appendChild(el);
   }
   // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
