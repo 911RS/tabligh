@@ -39,6 +39,7 @@ Pick nothing. A scheduler chooses a random surah + passage, pulls the exact reci
 - 🌇 **Safe, tasteful backgrounds** — a curated 50-keyword pool (mosques, nature, sea, sky…) plus a filter that drops any photo containing people or anything unsuitable.
 - 🎞️ **Signature outro** — the passage fades out and a ṣalawāt (with your logo) glides up over the same scene, then the whole video fades to black.
 - 📤 **Multi-platform publishing** — TikTok, Instagram Reels, Facebook Reels and YouTube Shorts via [Buffer](https://buffer.com), toggled per platform by env.
+- 🎛️ **Self-hosted control panel** — a password-protected web UI to manage every setting, generate/preview/post a reel, queue passages, and browse history + analytics — all live, no redeploy. Localized (EN/AR/FR, full RTL).
 - ⏰ **Set-and-forget scheduler** — an always-on process posts N times a day in your timezone.
 - 🧹 **Disk-friendly** — local files are wiped right after posting; cloud objects are pruned automatically.
 - 🐳 **One-container deploy** — Dockerfile + works great on Coolify, Fly, Railway, or any Docker host.
@@ -124,6 +125,25 @@ See [`.env.example`](.env.example) for the full annotated list.
 **Reciters:** `husary`, `minshawy`, `abdulbasit`, `hudhaify`, `ayyoub`, `shuraym`, `husary-muallim` — or any raw [everyayah](https://everyayah.com) folder. See [`src/quran/reciters.ts`](src/quran/reciters.ts).
 
 **Translations:** any [alquran.cloud](https://alquran.cloud) edition id, e.g. `en.sahih`, `fr.hamidullah`, or `""` for Arabic only.
+
+---
+
+## 🎛️ Control panel & CLI
+
+Open the app root (`http://localhost:3000`) for a password-protected panel:
+
+- **First run** shows a setup screen to create your password (or run `tabligh init` for a terminal wizard).
+- **Dashboard** — status, one-click *Generate now* / *+ publish*, latest preview.
+- **Generate** — pick a passage or go random, preview before it posts.
+- **Settings** — schedule (timezone + time picker), content (translation, ayah count, **max length**), branding (karaoke, fill color, particles, animated background, outro promo), platform channel ids, API keys & storage — applied **live**.
+- **Queue** — plan specific passages; the scheduler plays them before random picks.
+- **History / Analytics** — every render + post, totals, by-platform, recent logs.
+- **Language** — switch the panel between English, العربية (RTL) and Français.
+
+Login is rate-limited (5 tries → 15-min lockout). Reset the password from the server with
+`tabligh set-password <new>` (e.g. `docker exec <container> tabligh set-password …`).
+
+Settings live in the store and persist on the `/app/data` volume; `.env` only seeds them on first run.
 
 ---
 

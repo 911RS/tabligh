@@ -4,6 +4,34 @@
   "private": true,
   "description": "Tabligh \u2014 auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
   "type": "module",
+  "license": "MIT",
+  "author": "911RS",
+  "homepage": "https://github.com/911RS/tabligh#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/911RS/tabligh.git"
+  },
+  "bugs": {
+    "url": "https://github.com/911RS/tabligh/issues"
+  },
+  "keywords": [
+    "quran",
+    "reels",
+    "shorts",
+    "tiktok",
+    "instagram",
+    "youtube",
+    "video-generation",
+    "karaoke",
+    "islam",
+    "ffmpeg",
+    "puppeteer"
+  ],
+  "files": [
+    "dist",
+    "assets",
+    "examples"
+  ],
   "bin": {
     "tabligh": "dist/cli.js"
   },

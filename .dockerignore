@@ -7,3 +7,9 @@ work
 .env
 .env.local
 npm-debug.log*
+# Persisted store (may contain secrets) — never bake into the image
+data
+# Local scratch / source assets not needed at runtime
+icon.jpeg
+icon.png
+docs
