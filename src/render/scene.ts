@@ -84,9 +84,10 @@ export function buildScene(p: SceneParams): string {
         : '';
 
   const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length };
-  // Outro card: logo (if present) stacked above the ṣalawāt text; both centered.
+  // Outro card: logo (only when the logo/watermark is enabled) stacked above the
+  // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
   const endCardInner =
-    (p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
+    (p.showWatermark && p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
     (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '');
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
@@ -251,16 +252,18 @@ window.__setTime=function(ms){
   const clamp=(x)=>Math.max(0,Math.min(1,x));
   if(CFG.outro>0 && ms>=CFG.duration){
     const vp=clamp((ms-CFG.duration)/CFG.outro);
-    // content + corner watermark fade out fast; background turns black
-    const cf=clamp(vp/0.18);
+    // ayah content + corner watermark fade out — but the PHOTO bg + overlay stay,
+    // so the ṣalawāt sits on the same look as the rest of the video.
+    const cf=clamp(vp/0.15);
     safe.style.opacity=(1-cf).toFixed(3);
-    safe.style.transform='scale('+(1+0.05*cf).toFixed(3)+')';
-    if(wm) wm.style.opacity=(1-clamp(vp/0.15)).toFixed(3);
-    veil.style.opacity=clamp(vp/0.22).toFixed(3);
-    // end-card: fade in [0.10,0.32] · HOLD [0.32,0.80] · fade out [0.80,1]
-    let lo = vp<0.10 ? 0 : vp<0.32 ? (vp-0.10)/0.22 : vp<0.80 ? 1 : 1-(vp-0.80)/0.20;
+    safe.style.transform='scale('+(1+0.04*cf).toFixed(3)+')';
+    if(wm) wm.style.opacity=(1-clamp(vp/0.12)).toFixed(3);
+    // end-card (ṣalawāt + optional logo): fade in [0.05,0.25] · HOLD [0.25,0.75] · fade out [0.75,1]
+    let lo = vp<0.05 ? 0 : vp<0.25 ? (vp-0.05)/0.20 : vp<0.75 ? 1 : 1-(vp-0.75)/0.25;
     ec.style.opacity=clamp(lo).toFixed(3);
-    ec.style.transform='scale('+(0.86+0.14*clamp(vp/0.32)).toFixed(3)+')';
+    ec.style.transform='scale('+(0.88+0.12*clamp(vp/0.25)).toFixed(3)+')';
+    // Only at the very END: fade the WHOLE video to black.
+    veil.style.opacity=clamp((vp-0.72)/0.28).toFixed(3);
   } else {
     safe.style.opacity='1'; safe.style.transform='none';
     veil.style.opacity='0'; ec.style.opacity='0';
