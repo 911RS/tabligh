@@ -258,10 +258,12 @@ window.__setTime=function(ms){
     safe.style.opacity=(1-cf).toFixed(3);
     safe.style.transform='scale('+(1+0.04*cf).toFixed(3)+')';
     if(wm) wm.style.opacity=(1-clamp(vp/0.12)).toFixed(3);
-    // end-card (ṣalawāt + optional logo): fade in [0.05,0.25] · HOLD [0.25,0.75] · fade out [0.75,1]
-    let lo = vp<0.05 ? 0 : vp<0.25 ? (vp-0.05)/0.20 : vp<0.75 ? 1 : 1-(vp-0.75)/0.25;
-    ec.style.opacity=clamp(lo).toFixed(3);
-    ec.style.transform='scale('+(0.88+0.12*clamp(vp/0.25)).toFixed(3)+')';
+    // end-card: glide up slowly from the bottom (eased + de-blur), HOLD, then fade out.
+    const ei=clamp((vp-0.05)/0.28), se=ei*ei*(3-2*ei); // smootherstep entrance
+    const ex=clamp((vp-0.75)/0.25);
+    ec.style.opacity=(se*(1-ex)).toFixed(3);
+    ec.style.transform='translateY('+((1-se)*110).toFixed(1)+'px) scale('+(0.98+0.02*se).toFixed(3)+')';
+    ec.style.filter='blur('+((1-se)*9).toFixed(1)+'px)';
     // Only at the very END: fade the WHOLE video to black.
     veil.style.opacity=clamp((vp-0.72)/0.28).toFixed(3);
   } else {
