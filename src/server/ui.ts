@@ -11,10 +11,14 @@ const ICONS = {
   analytics: ICON('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
 };
 
-export function renderPanel(f: { regular: string; medium: string; bold: string }): string {
+export function renderPanel(f: { regular: string; medium: string; bold: string }, icon = ''): string {
+  const brandMark = icon
+    ? `<img src="data:image/png;base64,${icon}" width="26" height="26" style="border-radius:7px;display:block"/>`
+    : MARK;
+  const favicon = icon ? `<link rel="icon" type="image/png" href="data:image/png;base64,${icon}"/>` : '';
   return `<!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Tabligh</title>
+<title>Tabligh</title>${favicon}
 <style>
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${f.regular}) format('truetype');font-weight:400;font-display:swap}
 @font-face{font-family:'Ubuntu';src:url(data:font/ttf;base64,${f.medium}) format('truetype');font-weight:500;font-display:swap}
@@ -40,6 +44,7 @@ button{font-family:inherit;cursor:pointer}
 .nav.on{background:var(--goldd);color:var(--gold);border-color:rgba(254,211,81,.25)}
 .nav svg{opacity:.9}
 .spacer{flex:1}
+.langsel{width:calc(100% - 24px);margin:6px 12px;padding:7px 10px;font-size:12.5px}
 .credit{display:block;padding:12px 12px 2px;font-size:11px;color:var(--faint);letter-spacing:.3px}
 .credit:hover{color:var(--dim)}
 .main{padding:34px 40px;max-width:1080px;width:100%}
@@ -89,28 +94,39 @@ video{width:100%;border-radius:12px;background:#000;max-height:66vh;margin-top:8
 </style></head>
 <body><div id="app" class="center"><div class="sub">Loading…</div></div><div id="toast" class="toast"></div>
 <script>
-const MARK=\`${MARK}\`, IC=${JSON.stringify(ICONS)};
+const MARK=\`${brandMark}\`, IC=${JSON.stringify(ICONS)};
 const el=(h)=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild};
 const app=document.getElementById('app');const esc=(s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const T={en:{dashboard:'Dashboard',generate:'Generate',settings:'Settings',queue:'Queue',history:'History',analytics:'Analytics',signout:'Sign out',welcome:'Welcome back',signin_sub:'Sign in to your control panel.',password:'Password',signin:'Sign in',lang:'Language'},
+ar:{dashboard:'الرئيسية',generate:'إنشاء',settings:'الإعدادات',queue:'قائمة الانتظار',history:'السجل',analytics:'التحليلات',signout:'تسجيل الخروج',welcome:'مرحباً بعودتك',signin_sub:'سجّل الدخول إلى لوحة التحكم.',password:'كلمة المرور',signin:'دخول',lang:'اللغة'},
+fr:{dashboard:'Tableau de bord',generate:'Générer',settings:'Paramètres',queue:'File',history:'Historique',analytics:'Analytique',signout:'Déconnexion',welcome:'Bon retour',signin_sub:'Connectez-vous à votre panneau.',password:'Mot de passe',signin:'Se connecter',lang:'Langue'}};
+let LANG=localStorage.getItem('lang')||'en';
+const t=(k)=>(T[LANG]&&T[LANG][k])||T.en[k]||k;
+function applyLang(){document.documentElement.lang=LANG;document.documentElement.dir=LANG==='ar'?'rtl':'ltr'}
+function setLang(l){LANG=l;localStorage.setItem('lang',l);applyLang();boot()}
+
 let S={},SET={},_minio={};
+function tzSel(id,val){const zs=(Intl.supportedValuesOf&&Intl.supportedValuesOf('timeZone'))||[val||'UTC'];if(val&&!zs.includes(val))zs.unshift(val);return '<select id="'+id+'">'+zs.map(z=>'<option '+(z===val?'selected':'')+'>'+z+'</option>').join('')+'</select>'}
 async function api(p,m,b){const r=await fetch(p,{method:m||'GET',headers:b?{'content-type':'application/json'}:{},body:b?JSON.stringify(b):undefined});const t=await r.text();let j={};try{j=t?JSON.parse(t):{}}catch{}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400)}
 
-async function boot(){S=await api('/api/status');if(!S.setupComplete)return setupView();if(!S.authed)return loginView();await load();dash('dashboard')}
-async function load(){SET=await api('/api/settings');_minio=SET.minioPublic||{}}
+async function boot(){applyLang();S=await api('/api/status');if(!S.setupComplete)return setupView();if(!S.authed)return loginView();await load();dash('dashboard')}
+let EDITIONS=[];
+async function load(){SET=await api('/api/settings');_minio=SET.minioPublic||{};EDITIONS=await api('/api/editions').catch(()=>[])}
+function trSelect(val){return '<select id="c_tr">'+EDITIONS.map(g=>'<optgroup label="'+esc(g.language)+'">'+g.editions.map(e=>'<option value="'+esc(e.id)+'" '+(e.id===val?'selected':'')+'>'+esc(e.name)+'</option>').join('')+'</optgroup>').join('')+'</select>'}
 
-function loginView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>Welcome back</h1><p class="sub">Sign in to your control panel.</p><label>Password</label><input id="pw" type="password" autofocus/><button class="btn" style="width:100%;margin-top:18px" id="go">Sign in</button></div>\`));
+function loginView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>\${t('welcome')}</h1><p class="sub">\${t('signin_sub')}</p><label>\${t('password')}</label><input id="pw" type="password" autofocus/><button class="btn" style="width:100%;margin-top:18px" id="go">\${t('signin')}</button></div>\`));
   const go=async()=>{try{await api('/api/login','POST',{password:pw.value});location.reload()}catch(e){toast(e.message)}};
   document.getElementById("go").onclick=go;pw.onkeydown=e=>e.key==='Enter'&&go();}
-function setupView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>Set up your panel</h1><p class="sub">Choose a password. Add API keys later in Settings.</p><label>Panel password</label><input id="pw" type="password"/><label>Timezone</label><input id="tz" value="Africa/Tunis"/><button class="btn" style="width:100%;margin-top:18px" id="go">Create panel</button></div>\`));
+function setupView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>Set up your panel</h1><p class="sub">Choose a password. Add API keys later in Settings.</p><label>Panel password</label><input id="pw" type="password"/><label>Timezone</label>\${tzSel("tz","Africa/Tunis")}<button class="btn" style="width:100%;margin-top:18px" id="go">Create panel</button></div>\`));
   document.getElementById("go").onclick=async()=>{try{await api('/api/setup','POST',{password:pw.value,settings:{schedule:{tz:tz.value,times:['07:00','13:00','19:00'],enabled:true}}});location.reload()}catch(e){toast(e.message)}};}
 
-const NAV=[['dashboard','Dashboard'],['generate','Generate'],['schedule','Settings'],['queue','Queue'],['history','History'],['analytics','Analytics']];
+const NAV=[['dashboard','dashboard'],['generate','generate'],['schedule','settings'],['queue','queue'],['history','history'],['analytics','analytics']];
 function shell(active,title,desc,body){app.className='';app.innerHTML='';
   app.append(el(\`<div class="shell"><aside class="side"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div>
-    \${NAV.map(([v,l])=>\`<button class="nav \${v===active?'on':''}" data-v="\${v}">\${IC[v]||''}<span>\${l}</span></button>\`).join('')}
-    <div class="spacer"></div><button class="nav" id="out">\${IC.history}<span>Sign out</span></button>
-    <a class="credit" href="https://github.com/911RS/tabligh" target="_blank" rel="noopener">github.com/911RS/tabligh</a></aside>
+    \${NAV.map(([v,l])=>\`<button class="nav \${v===active?'on':''}" data-v="\${v}">\${IC[v]||''}<span>\${t(l)}</span></button>\`).join('')}
+    <div class="spacer"></div><button class="nav" id="out">\${IC.history}<span>\${t('signout')}</span></button>
+    <select class="langsel" onchange="setLang(this.value)">\${['en','ar','fr'].map(l=>'<option value="'+l+'" '+(l===LANG?'selected':'')+'>'+{en:'English',ar:'العربية',fr:'Français'}[l]+'</option>').join('')}</select><a class="credit" href="https://github.com/911RS/tabligh" target="_blank" rel="noopener">github.com/911RS/tabligh</a></aside>
     <main class="main fade"><div class="head"><div><h1>\${title}</h1><p>\${desc||''}</p></div><div id="hact"></div></div><div id="body"></div></main></div>\`));
   document.getElementById('out').onclick=async()=>{await api('/api/logout','POST');location.reload()};
   app.querySelectorAll('.nav[data-v]').forEach(b=>b.onclick=()=>dash(b.dataset.v));
@@ -146,11 +162,11 @@ function timesEditor(times){const box=el('<div class="chips" id="times"></div>')
 function getTimes(){return [...document.querySelectorAll('#times input[type=time]')].map(i=>i.value).filter(Boolean).sort()}
 
 function fld(l,id,v,t){return \`<label>\${l}</label><input id="\${id}" type="\${t||'text'}" value="\${esc(v??'')}"/>\`}
-function sw(id,on,l){return \`<label class="sw"><input type="checkbox" id="\${id}" \${on?'checked':''}/><span class="track"></span><span>\${l}</span></label>\`}
+function sw(id,on,l){return \`<label class="sw"><input type="checkbox" id="\${id}" \${on?'checked':''}/><span class="track"></span><span>\${t(l)}</span></label>\`}
 function viewSettings(){const s=SET;const body=el(\`<div>
   <div class="card"><h3>Schedule</h3><div style="margin-bottom:14px">\${sw('sch_en',s.schedule.enabled,'Scheduler enabled')}</div>
-    <label>Post times</label><div id="times_m"></div>\${fld('Timezone','sch_tz',s.schedule.tz)}</div>
-  <div class="card"><h3>Content</h3><div class="row"><div class="f">\${fld('Translation edition','c_tr',s.content.translationEdition)}</div><div class="f">\${fld('Min ayahs','c_min',s.content.randomMinAyahs,'number')}</div><div class="f">\${fld('Max ayahs','c_max',s.content.randomMaxAyahs,'number')}</div></div></div>
+    <label>Post times</label><div id="times_m"></div><label>Timezone</label>\${tzSel('sch_tz',s.schedule.tz)}</div>
+  <div class="card"><h3>Content</h3><div class="row"><div class="f"><label>Translation</label>\${trSelect(s.content.translationEdition)}</div><div class="f">\${fld('Min ayahs','c_min',s.content.randomMinAyahs,'number')}</div><div class="f">\${fld('Max ayahs','c_max',s.content.randomMaxAyahs,'number')}</div></div></div>
   <div class="card"><h3>Branding</h3><div class="row" style="margin-bottom:6px"><div class="f">\${sw('b_kar',s.branding.karaokeEnabled,'Karaoke fill')}</div><div class="f">\${sw('b_wm',s.branding.watermarkEnabled,'Corner watermark')}</div></div>
     <div class="row"><div class="f"><label>Fill color</label><input id="b_fill" type="color" value="\${esc(s.branding.textFillColor||'#ffffff')}" style="height:44px;padding:4px"/></div><div class="f">\${fld('Watermark handle','b_h',s.branding.watermarkHandle)}</div></div>\${fld('Outro text','b_out',s.branding.outroText)}</div>
   <div class="card"><h3>Publishing channels</h3>\${['tiktok','instagram','facebook','youtube'].map(p=>fld(p[0].toUpperCase()+p.slice(1)+' channel ids','p_'+p,(s.publish.channels[p]||[]).join(', '))).join('')}</div>

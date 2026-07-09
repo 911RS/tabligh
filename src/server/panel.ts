@@ -12,13 +12,16 @@ import { isConfigured, listChannels } from '../publish/buffer.js';
 import { runJob, isBusy, runnerStatus, findLatestVideo } from './runner.js';
 import { log, recentLogs } from '../util/log.js';
 import { renderPanel } from './ui.js';
+import { TRANSLATION_EDITIONS } from '../i18n.js';
 
 let _html: string | null = null;
-/** Build the panel HTML once, embedding the vendored Ubuntu fonts. */
+/** Build the panel HTML once, embedding the vendored Ubuntu fonts + icon. */
 function panelHtml(): string {
   if (_html) return _html;
   const F = (n: string) => readFileSync(join(process.cwd(), 'assets/fonts', n)).toString('base64');
-  _html = renderPanel({ regular: F('Ubuntu-Regular.ttf'), medium: F('Ubuntu-Medium.ttf'), bold: F('Ubuntu-Bold.ttf') });
+  let icon = '';
+  try { icon = readFileSync(join(process.cwd(), 'assets/icon.png')).toString('base64'); } catch { /* optional */ }
+  _html = renderPanel({ regular: F('Ubuntu-Regular.ttf'), medium: F('Ubuntu-Medium.ttf'), bold: F('Ubuntu-Bold.ttf') }, icon);
   return _html;
 }
 
@@ -143,6 +146,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     return json(res, 202, { ok: true });
   }
 
+  if (path === '/api/editions' && method === 'GET') return json(res, 200, TRANSLATION_EDITIONS);
   if (path === '/api/history' && method === 'GET') return json(res, 200, listPosts(100));
   if (path === '/api/stats' && method === 'GET') return json(res, 200, computeStats());
   if (path === '/api/logs' && method === 'GET') return json(res, 200, recentLogs(200));

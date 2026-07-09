@@ -8,19 +8,20 @@ import { uploadFile, deleteObject, listStaleObjects } from './minio.js';
 import { publishReelToBuffer, type PostMode } from './buffer.js';
 import { appendEntry } from './ledger.js';
 import type { PhotoCredit } from '../render/background.js';
+import { captionStrings } from '../i18n.js';
 
-/** Default caption: surah + ayah range + reciter + photo credit + hashtags. */
+/** Localized caption: surah + ayah range + reciter + photo credit + hashtags. */
 export function buildCaption(reel: ReelJob, credit?: PhotoCredit): string {
-  const range =
-    reel.ayahFrom === reel.ayahTo ? `Ayah ${reel.ayahFrom}` : `Ayah ${reel.ayahFrom}-${reel.ayahTo}`;
-  const tag = reel.surahEnglishName.replace(/[^A-Za-z]/g, '');
+  const c = captionStrings(reel.translationEdition);
+  const range = reel.ayahFrom === reel.ayahTo ? `${reel.ayahFrom}` : `${reel.ayahFrom}-${reel.ayahTo}`;
+  const surahTag = reel.surahEnglishName.replace(/[^A-Za-z]/g, '');
   const lines = [
-    `📖 Surah ${reel.surahEnglishName} — ${range}`,
-    `🎙️ Recited by ${reel.reciterName}`,
+    `📖 ${c.surah} ${reel.surahEnglishName} · ${range}`,
+    `🎙️ ${c.recitedBy} ${reel.reciterName}`,
   ];
-  if (credit) lines.push(`📷 Background: photo by ${credit.author} on ${credit.source} (${credit.url})`);
+  if (credit) lines.push(`📷 ${c.background} ${credit.author} ${c.on} ${credit.source}`);
   lines.push('');
-  lines.push(`#Quran #Islam #Recitation #Quranic #${tag} #QuranRecitation #Muslim #Deen #fyp`);
+  lines.push([...c.tags, surahTag].map((t) => '#' + t).join(' '));
   return lines.join('\n');
 }
 
