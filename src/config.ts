@@ -53,7 +53,7 @@ export const env = {
     useSSL: (process.env.MINIO_USE_SSL ?? 'false') === 'true',
     accessKey: process.env.MINIO_ACCESS_KEY ?? '',
     secretKey: process.env.MINIO_SECRET_KEY ?? '',
-    bucket: process.env.MINIO_BUCKET_NAME ?? 'quran-poster',
+    bucket: process.env.MINIO_BUCKET_NAME ?? 'tabligh',
     publicUrl: (process.env.MINIO_PUBLIC_URL ?? '').replace(/\/$/, ''),
   },
   retentionDays: Number(process.env.RETENTION_DAYS ?? '7'),

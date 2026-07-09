@@ -1,15 +1,8 @@
-import http from 'node:http';
-import { readdirSync, statSync, existsSync, createReadStream } from 'node:fs';
-import { join } from 'node:path';
-import { env, JobSchema, type Job } from './config.js';
-import { settings, secrets } from './store/store.js';
-import { buildReelJob, renderReel } from './pipeline.js';
-import { pickRandomJob } from './random.js';
-import { publishReel, prune } from './publish/index.js';
+import { settings } from './store/store.js';
 import { isConfigured } from './publish/buffer.js';
+import { scheduledRun } from './server/runner.js';
+import { startServer } from './server/panel.js';
 import { log } from './util/log.js';
-
-let busy = false; // guard: only one heavy render/publish at a time
 
 function nowParts(tz: string): { hm: string; day: string } {
   const fmt = new Intl.DateTimeFormat('en-CA', {
@@ -21,126 +14,13 @@ function nowParts(tz: string): { hm: string; day: string } {
 }
 
 /**
- * Run one job: prune → render → (publish if requested & configured).
- * `jobOverride` lets the manual trigger pick an exact passage; otherwise random.
+ * Long-running entrypoint: the control-panel HTTP server + a wall-clock
+ * scheduler that fires a run at each of the store's PUBLISH_TIMES.
  */
-async function runJob(opts: { jobOverride?: Partial<Job>; publish: boolean }): Promise<string> {
-  if (busy) throw new Error('a run is already in progress');
-  busy = true;
-  try {
-    await prune();
-    const job: Job = opts.jobOverride
-      ? JobSchema.parse({ reciter: 'husary', ...opts.jobOverride, publish: opts.publish })
-      : await pickRandomJob({ publish: opts.publish });
-
-    const reel = await buildReelJob(job, `serve-${Date.now()}`);
-    const { mp4, credit } = await renderReel(job, reel);
-
-    if (opts.publish && isConfigured()) {
-      const ids = await publishReel(reel, mp4, { credit });
-      const msg = `Published ${job.surah}:${job.ayahFrom}-${job.ayahTo} → ${ids.join(', ')}`;
-      log.ok(msg);
-      return msg;
-    }
-    const why = opts.publish ? 'Buffer not configured' : 'render-only';
-    log.ok(`Rendered ${job.surah}:${job.ayahFrom}-${job.ayahTo} (${why}) → ${mp4}`);
-    return `rendered ${job.surah}:${job.ayahFrom}-${job.ayahTo} (${why})`;
-  } finally {
-    busy = false;
-  }
-}
-
-/** Scheduled production run at PUBLISH_TIMES: publish a random reel (skip if no Buffer). */
-async function scheduledRun(): Promise<void> {
-  try {
-    await prune(); // always prune stale assets, even when we skip publishing
-    if (!isConfigured()) {
-      log.warn('Buffer not configured — skipping scheduled run.');
-      return;
-    }
-    await runJob({ publish: true });
-  } catch (e) {
-    log.error(`Scheduled run failed: ${e instanceof Error ? e.message : e}`);
-  }
-}
-
-/** Newest work/<dir>/reel.mp4 by mtime, or null. */
-function findLatestVideo(): string | null {
-  const root = join(process.cwd(), 'work');
-  let best: string | null = null;
-  let bestT = 0;
-  try {
-    for (const d of readdirSync(root)) {
-      const f = join(root, d, 'reel.mp4');
-      if (existsSync(f)) {
-        const t = statSync(f).mtimeMs;
-        if (t > bestT) { bestT = t; best = f; }
-      }
-    }
-  } catch { /* work/ may not exist */ }
-  return best;
-}
-
-/** Tiny HTTP server: GET /health, secured /trigger, and /last (latest video). */
-function startHttp(): void {
-  http
-    .createServer((req, res) => {
-      const url = new URL(req.url ?? '/', 'http://localhost');
-      // Root + /health return 200 so the platform proxy sees a healthy backend.
-      if (url.pathname === '/' || url.pathname === '/health') {
-        res.writeHead(200, { 'content-type': 'text/plain' });
-        res.end('tabligh ok');
-        return;
-      }
-      if (url.pathname === '/trigger') {
-        const key = url.searchParams.get('key') ?? req.headers['x-trigger-key'];
-        if (!secrets().triggerToken || key !== secrets().triggerToken) {
-          res.writeHead(401); res.end('unauthorized'); return;
-        }
-        if (busy) { res.writeHead(409); res.end('a run is already in progress'); return; }
-        const q = url.searchParams;
-        const jobOverride = q.get('surah')
-          ? {
-              surah: Number(q.get('surah')),
-              ayahFrom: Number(q.get('from') ?? '1'),
-              ayahTo: Number(q.get('to') ?? q.get('from') ?? '1'),
-              ...(q.get('reciter') ? { reciter: q.get('reciter')! } : {}),
-            }
-          : undefined;
-        const publish = q.get('publish') !== 'false'; // temp test hook: publish by default
-        res.writeHead(202, { 'content-type': 'text/plain' });
-        res.end(`triggered${publish ? ' (will publish if Buffer configured)' : ' (render-only)'} — watch logs`);
-        runJob({ jobOverride, publish }).catch((e) =>
-          log.error(`Trigger run failed: ${e instanceof Error ? e.message : e}`),
-        );
-        return;
-      }
-      if (url.pathname === '/last') {
-        const key = url.searchParams.get('key') ?? req.headers['x-trigger-key'];
-        if (!secrets().triggerToken || key !== secrets().triggerToken) {
-          res.writeHead(401); res.end('unauthorized'); return;
-        }
-        const file = findLatestVideo();
-        if (!file) { res.writeHead(404); res.end('no video rendered yet'); return; }
-        const size = statSync(file).size;
-        res.writeHead(200, {
-          'content-type': 'video/mp4',
-          'content-length': size,
-          'content-disposition': 'inline; filename="reel.mp4"',
-        });
-        createReadStream(file).pipe(res);
-        return;
-      }
-      res.writeHead(404); res.end('not found');
-    })
-    .listen(env.port, () => log.ok(`HTTP on :${env.port} (/health, /trigger${secrets().triggerToken ? '' : ' DISABLED — set TRIGGER_TOKEN'})`));
-}
-
-/** Long-running entrypoint: HTTP server + wall-clock scheduler. */
 export async function serve(): Promise<void> {
   const s0 = settings().schedule;
-  log.ok(`serve up · TZ=${s0.tz} · times=[${s0.times.join(', ')}] · publish=${isConfigured() ? 'on' : 'OFF (no Buffer creds)'}`);
-  startHttp();
+  log.ok(`serve up · TZ=${s0.tz} · times=[${s0.times.join(', ')}] · publish=${isConfigured() ? 'on' : 'OFF (not configured)'}`);
+  startServer();
   let lastFired = '';
   for (;;) {
     const sch = settings().schedule; // live — panel edits apply immediately
