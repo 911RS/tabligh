@@ -12,18 +12,23 @@ RUN npm run build
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production \
-    PUPPETEER_SKIP_DOWNLOAD=1 \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+    PUPPETEER_CACHE_DIR=/app/.cache/puppeteer
 
-# System deps: Chromium (puppeteer), ffmpeg (video), Arabic-capable fallback
-# fonts. The reel fonts (Aref Ruqaa, Ubuntu) ship vendored in assets/ and are
-# embedded as base64, so OS fonts are only a fallback.
+# ffmpeg + the shared libraries Chrome needs at runtime + Arabic fallback fonts.
+# We deliberately do NOT use the distro `chromium` package — its version does not
+# match Puppeteer's protocol and crashes on launch. Puppeteer downloads its own
+# matching Chrome below; these libs are what that Chrome dlopen()s at runtime.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      chromium ffmpeg ca-certificates \
-      fonts-noto-core fonts-noto-extra fontconfig \
+      ffmpeg ca-certificates wget fontconfig fonts-liberation \
+      fonts-noto-core fonts-noto-extra \
+      libasound2 libatk-bridge2.0-0 libatk1.0-0 libcairo2 libcups2 libdbus-1-3 \
+      libdrm2 libexpat1 libgbm1 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 \
+      libpango-1.0-0 libpangocairo-1.0-0 libx11-6 libxcb1 libxcomposite1 \
+      libxdamage1 libxext6 libxfixes3 libxkbcommon0 libxrandr2 libxshmfence1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Prod-only node_modules (skips puppeteer's bundled Chromium download).
+# Prod deps + Puppeteer's matching Chrome (postinstall downloads it into
+# PUPPETEER_CACHE_DIR). No PUPPETEER_SKIP_DOWNLOAD here on purpose.
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
@@ -31,7 +36,7 @@ COPY --from=builder /app/dist ./dist
 COPY assets ./assets
 COPY examples ./examples
 
-# Always-on: the self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
+# Always-on: self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
 # and serves /health + /trigger on this port.
 EXPOSE 3000
 ENTRYPOINT ["node", "dist/cli.js"]
