@@ -44,7 +44,7 @@ interface Found { imgUrl: string; credit: PhotoCredit }
 
 async function searchPexels(query: string): Promise<Found | null> {
   if (!secrets().pexelsKey) return null;
-  const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=20&orientation=portrait`;
+  const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=40&orientation=portrait`;
   const res = await fetch(url, { headers: { Authorization: secrets().pexelsKey } });
   if (!res.ok) return null;
   const body = (await res.json()) as {
@@ -61,7 +61,7 @@ async function searchPexels(query: string): Promise<Found | null> {
 
 async function searchUnsplash(query: string): Promise<Found | null> {
   if (!secrets().unsplashKey) return null;
-  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=20&orientation=portrait`;
+  const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=30&orientation=portrait`;
   const res = await fetch(url, { headers: { Authorization: `Client-ID ${secrets().unsplashKey}` } });
   if (!res.ok) return null;
   const body = (await res.json()) as {
@@ -86,19 +86,28 @@ export async function resolveBackground(
   seed: number,
 ): Promise<Background> {
   const provided = keywords.filter(Boolean).join(' ').trim();
-  const query = provided || BACKGROUND_KEYWORDS[seed % BACKGROUND_KEYWORDS.length];
-  try {
-    let found: Found | null = null;
-    if (source === 'pexels' || source === 'auto') found = await searchPexels(query);
-    if (!found && (source === 'unsplash' || source === 'auto')) found = await searchUnsplash(query);
-    if (found) {
-      const dataUri = await fetchAsDataUri(found.imgUrl);
-      log.step(`Background: ${found.credit.source} photo by ${found.credit.author} ("${query}")`);
-      return { css: `url('${dataUri}')`, kind: 'image', credit: found.credit };
+  // The strict person-filter can reject a whole page, so we keep trying DIFFERENT
+  // safe scenes (and both sources) until one yields a person-free photo. A gradient
+  // is only ever used if EVERY attempt fails — which should essentially never happen.
+  const pool = BACKGROUND_KEYWORDS;
+  const walk = Array.from({ length: pool.length }, (_, i) => pool[(seed + i) % pool.length]);
+  const queries = provided ? [provided, ...walk] : walk;
+  const MAX_ATTEMPTS = 18; // bound API usage; each query yields up to ~30 candidates
+  for (const query of queries.slice(0, MAX_ATTEMPTS)) {
+    try {
+      let found: Found | null = null;
+      if (source === 'pexels' || source === 'auto') found = await searchPexels(query);
+      if (!found && (source === 'unsplash' || source === 'auto')) found = await searchUnsplash(query);
+      if (found) {
+        const dataUri = await fetchAsDataUri(found.imgUrl);
+        log.step(`Background: ${found.credit.source} photo by ${found.credit.author} ("${query}")`);
+        return { css: `url('${dataUri}')`, kind: 'image', credit: found.credit };
+      }
+    } catch (e) {
+      log.warn(`Background attempt failed ("${query}"): ${e instanceof Error ? e.message : e}`);
     }
-  } catch (e) {
-    log.warn(`Stock background failed (${e instanceof Error ? e.message : e}); using gradient`);
   }
+  log.warn('No person-free photo after all attempts — using gradient fallback');
   log.step('Background: gradient fallback');
   return gradientFor(seed);
 }

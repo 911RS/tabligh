@@ -37,7 +37,7 @@ button{font-family:inherit;cursor:pointer}
 .auth{width:380px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
 .auth h1{font-size:16px;margin:18px 0 4px}.sub{color:var(--dim);font-size:13.5px;margin:0 0 6px}
 .authbrand{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:12px}
-.authicon{width:80px;height:80px;border-radius:20px;display:block;box-shadow:0 14px 34px -10px rgba(0,0,0,.65)}
+.authicon{width:80px;height:80px;border-radius:20px;display:block}
 .authname{font-weight:700;font-size:22px;letter-spacing:-.3px}
 .auth h1{text-align:center;font-size:17px;margin:14px 0 4px}.auth .sub{text-align:center}
 /* app shell */

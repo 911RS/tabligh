@@ -1,7 +1,7 @@
 /**
  * Background search pool. All terms are landscapes / architecture / objects that
  * do NOT imply people, so stock results stay person-free. A random one is used
- * per run. Combined with the alt-text PERSON_BLOCKLIST filter in background.ts.
+ * per run. Combined with the FAIL-SAFE alt-text filter below.
  */
 export const BACKGROUND_KEYWORDS: string[] = [
   // Mosques / Islamic (no people)
@@ -33,11 +33,40 @@ export const PERSON_BLOCKLIST: string[] = [
   'wedding', 'bride', 'groom', 'crowd', 'worshipper', 'worshippers', 'pilgrim', 'pilgrims',
   'selfie', 'couple', 'family', 'silhouette', 'nude', 'naked', 'bikini', 'lingerie',
   'swimsuit', 'sexy', 'body', 'skin', 'dancer', 'dancing',
+  // extra human-context signals
+  'friend', 'friends', 'human', 'adult', 'teen', 'teenager', 'female', 'male',
+  'hand', 'hands', 'arm', 'arms', 'hair', 'beard', 'smile', 'smiling', 'posing', 'pose',
+  'standing', 'sitting', 'wearing', 'fashion', 'clothing', 'shirt', 'dress', 'jersey',
+  'hijab', 'abaya', 'thobe', 'headscarf', 'studio', 'curtain',
 ];
 
-/** True if an alt/description string is safe (no person/NSFW terms). */
+/**
+ * A photo must POSITIVELY describe one of these scenes to be accepted. This is
+ * an allowlist — anything we can't confirm is a safe scene gets rejected.
+ */
+export const SAFE_SUBJECTS: string[] = [
+  'mosque', 'minaret', 'dome', 'arch', 'arches', 'architecture', 'building', 'pattern',
+  'geometric', 'calligraphy', 'quran', 'koran', 'book', 'beads', 'tasbih', 'lantern', 'lamp',
+  'flower', 'flowers', 'floral', 'rose', 'roses', 'tulip', 'tulips', 'lavender', 'blossom',
+  'bloom', 'petal', 'petals', 'butterfly', 'meadow', 'lotus', 'garden', 'plant', 'plants',
+  'ocean', 'sea', 'wave', 'waves', 'water', 'lake', 'river', 'waterfall', 'coral', 'beach',
+  'coast', 'coastal', 'cliff', 'cliffs', 'sky', 'clouds', 'cloud', 'cloudy', 'sunset', 'sunrise',
+  'star', 'stars', 'starry', 'galaxy', 'milky', 'aurora', 'moon', 'night', 'dusk', 'dawn',
+  'forest', 'tree', 'trees', 'palm', 'pine', 'wood', 'woods', 'woodland', 'leaves', 'leaf',
+  'nature', 'natural', 'mountain', 'mountains', 'hill', 'hills', 'valley', 'desert', 'dune',
+  'dunes', 'sand', 'landscape', 'scenery', 'scenic', 'ship', 'sailboat', 'boat', 'lighthouse',
+  'train', 'railway', 'road', 'path', 'aerial', 'drone', 'horizon', 'field', 'fields', 'snow',
+  'ice', 'fog', 'mist', 'misty', 'rain', 'autumn', 'spring', 'landmark', 'temple', 'interior',
+];
+
+/**
+ * FAIL-SAFE: a photo is safe only when its description exists, names a safe scene,
+ * and contains no human/NSFW term. No description or an unrecognized scene → rejected
+ * (we'd rather fall back to a gradient than risk showing people).
+ */
 export function altIsSafe(alt: string | undefined | null): boolean {
-  if (!alt) return true; // no description → allow (keyword pool is already safe)
-  const words = alt.toLowerCase().split(/[^a-z]+/);
-  return !words.some((w) => PERSON_BLOCKLIST.includes(w));
+  if (!alt) return false; // can't verify → reject
+  const words = alt.toLowerCase().split(/[^a-z]+/).filter(Boolean);
+  if (words.some((w) => PERSON_BLOCKLIST.includes(w))) return false; // any human/NSFW word → reject
+  return words.some((w) => SAFE_SUBJECTS.includes(w)); // must positively be a safe scene
 }
