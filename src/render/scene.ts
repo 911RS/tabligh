@@ -48,6 +48,8 @@ export interface SceneParams {
   particles: boolean;
   /** Animated background zoom/breathing. */
   bgAnimation: boolean;
+  /** Show the "Check the Tabligh project" line (the github link is always shown). */
+  projectCredit: boolean;
   seed: number;
 }
 
@@ -99,12 +101,12 @@ export function buildScene(p: SceneParams): string {
   // A small project credit sits subtly beneath it.
   const ghIcon = `<svg class="gh" viewBox="0 0 16 16" width="34" height="34" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>`;
   const endCardInner =
-    (p.showWatermark && p.logoDataUri ? `<img class="end-logo" src="${p.logoDataUri}" alt=""/>` : '') +
-    (p.outroText ? `<div class="end-text" dir="rtl">${esc(p.outroText)}</div>` : '') +
-    `<div class="end-foot" dir="ltr">
-       <div class="end-sep"></div>
-       <div class="end-project">Check the <b>Tabligh</b> project</div>
-       <div class="end-credit">${ghIcon}<span>github.com/911RS/tabligh</span></div>
+    (p.showWatermark && p.logoDataUri ? `<img class="end-logo eo" src="${p.logoDataUri}" alt=""/>` : '') +
+    (p.outroText ? `<div class="end-text eo" dir="rtl">${esc(p.outroText)}</div>` : '') +
+    `<div class="end-foot${p.projectCredit ? '' : ' compact'}" dir="ltr">
+       <div class="end-sep eo"></div>
+       ${p.projectCredit ? `<div class="end-project eo">Check the <b>Tabligh</b> project</div>` : ''}
+       <div class="end-credit eo">${ghIcon}<span>github.com/911RS/tabligh</span></div>
      </div>`;
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
@@ -171,13 +173,16 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .end-logo{width:300px;height:auto;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}
 .end-text{font-family:'Kufi';font-weight:600;font-size:50px;line-height:1.9;color:#fff;text-align:center;
   direction:rtl;max-width:820px;padding:0 70px;filter:drop-shadow(0 3px 18px rgba(0,0,0,.7))}
+.eo{opacity:0;will-change:opacity,transform,filter}
 .end-foot{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:8px}
 .end-sep{width:170px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,${p.fillColor},transparent);opacity:.8}
 .end-project{font-family:'Ubuntu';font-weight:500;font-size:36px;color:rgba(255,255,255,.78);letter-spacing:.3px}
 .end-project b{color:${p.fillColor};font-weight:700}
 .end-credit{display:flex;align-items:center;gap:14px;font-family:'Ubuntu';font-weight:500;font-size:32px;
   letter-spacing:.6px;color:rgba(255,255,255,.82);filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-.end-credit .gh{opacity:.9;flex:none}
+.end-credit .gh{width:1.06em;height:1.06em;opacity:.9;flex:none}
+/* Compact (project text hidden): shrink the link a little. */
+.end-foot.compact .end-credit{font-size:26px;letter-spacing:.4px}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
@@ -288,14 +293,19 @@ window.__setTime=function(ms){
     safe.style.opacity=(1-cf).toFixed(3);
     safe.style.transform='scale('+(1+0.04*cf).toFixed(3)+')';
     if(wm) wm.style.opacity=(1-clamp(vp/0.12)).toFixed(3);
-    // end-card: glide up slowly from the bottom (eased + de-blur), HOLD, then fade out.
-    const ei=clamp((vp-0.05)/0.28), se=ei*ei*(3-2*ei); // smootherstep entrance
-    const ex=clamp((vp-0.75)/0.25);
-    ec.style.opacity=(se*(1-ex)).toFixed(3);
-    ec.style.transform='translateY('+((1-se)*110).toFixed(1)+'px) scale('+(0.98+0.02*se).toFixed(3)+')';
-    ec.style.filter='blur('+((1-se)*9).toFixed(1)+'px)';
+    // end-card elements glide up one-by-one from the bottom (eased + de-blur),
+    // HOLD, then fade the whole card out near the very end.
+    const ex=clamp((vp-0.80)/0.20);
+    ec.style.opacity='1';
+    const eos=ec.querySelectorAll('.eo'), EST=0.085;
+    for(let i=0;i<eos.length;i++){
+      const ei=clamp((vp-0.05-i*EST)/0.20), se=ei*ei*(3-2*ei); // staggered smootherstep
+      eos[i].style.opacity=(se*(1-ex)).toFixed(3);
+      eos[i].style.transform='translateY('+((1-se)*66).toFixed(1)+'px)';
+      eos[i].style.filter='blur('+((1-se)*7).toFixed(1)+'px)';
+    }
     // Only at the very END: fade the WHOLE video to black.
-    veil.style.opacity=clamp((vp-0.72)/0.28).toFixed(3);
+    veil.style.opacity=clamp((vp-0.76)/0.24).toFixed(3);
   } else {
     safe.style.opacity='1'; safe.style.transform='none';
     veil.style.opacity='0'; ec.style.opacity='0';

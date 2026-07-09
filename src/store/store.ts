@@ -34,6 +34,8 @@ export interface Settings {
     particlesEnabled: boolean;
     /** Slow cinematic background zoom/breathing. */
     bgAnimationEnabled: boolean;
+    /** Show the "Check the Tabligh project" line in the outro (link always shown). */
+    projectCreditEnabled: boolean;
   };
   publish: {
     channels: { tiktok: string[]; instagram: string[]; facebook: string[]; youtube: string[] };
@@ -118,6 +120,7 @@ function seedFromEnv(): StoreData {
         outroText: env.outroText,
         particlesEnabled: env.particlesEnabled,
         bgAnimationEnabled: env.bgAnimationEnabled,
+        projectCreditEnabled: env.projectCreditEnabled,
       },
       publish: {
         channels: {

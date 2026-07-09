@@ -77,6 +77,7 @@ export const env = {
   // Drifting particle glints and animated background zoom.
   particlesEnabled: (process.env.PARTICLES_ENABLED ?? 'true') === 'true',
   bgAnimationEnabled: (process.env.BG_ANIMATION ?? 'true') === 'true',
+  projectCreditEnabled: (process.env.PROJECT_CREDIT ?? 'true') === 'true',
   // Color of already-recited (filled) karaoke text; unfilled stays dim white.
   textFillColor: process.env.TEXT_FILL_COLOR || '#ffffff',
   // Show the top-right corner watermark (logo/handle). The outro sign-off is

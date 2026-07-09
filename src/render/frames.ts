@@ -110,6 +110,7 @@ export async function renderFrames(
     karaoke: settings().branding.karaokeEnabled,
     particles: settings().branding.particlesEnabled,
     bgAnimation: settings().branding.bgAnimationEnabled,
+    projectCredit: settings().branding.projectCreditEnabled,
     seed: opts.seed,
   });
 
