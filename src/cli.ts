@@ -6,6 +6,7 @@ import { publishReel, prune } from './publish/index.js';
 import { listChannels, isConfigured } from './publish/buffer.js';
 import type { PostMode } from './publish/buffer.js';
 import { serve } from './serve.js';
+import { runWizard } from './wizard.js';
 import { log } from './util/log.js';
 
 /** Tiny flag parser: --key value / --flag (boolean). */
@@ -66,6 +67,11 @@ async function main() {
   const runTag = (flags.tag as string) ?? 'dev';
 
   switch (cmd) {
+    case 'init': {
+      // Interactive setup wizard → writes the persisted store.
+      await runWizard();
+      break;
+    }
     case 'fetch': {
       const reel = await buildReelJob(jobFromFlags(flags), runTag);
       log.ok(`Done. ${reel.ayahs.length} ayah(s), ${(reel.durationMs / 1000).toFixed(1)}s → ${reel.workDir}`);
@@ -115,6 +121,7 @@ Usage:
   tabligh channels             # list Buffer channels (find your TikTok id)
 
 Commands:
+  init      Interactive setup wizard (keys, storage, schedule, branding, password)
   fetch     Fetch text + per-ayah audio, compute exact timing, write ir.json
   render    Also render the animated reel.mp4; add --publish to post it
   random    Pick a random surah + consecutive ayahs (full surah if ≤ ${'FULL_SURAH_MAX_AYAHS'})
