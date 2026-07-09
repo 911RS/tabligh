@@ -16,6 +16,7 @@ export function renderPanel(f: { regular: string; medium: string; bold: string }
     ? `<img src="data:image/png;base64,${icon}" width="26" height="26" style="border-radius:7px;display:block"/>`
     : MARK;
   const favicon = icon ? `<link rel="icon" type="image/png" href="data:image/png;base64,${icon}"/>` : '';
+  const iconSrc = icon ? `data:image/png;base64,${icon}` : '';
   return `<!doctype html><html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Tabligh</title>${favicon}
@@ -35,6 +36,10 @@ button{font-family:inherit;cursor:pointer}
 .center{min-height:100%;display:grid;place-items:center;padding:24px}
 .auth{width:380px;max-width:100%;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:0 24px 60px -20px rgba(0,0,0,.6)}
 .auth h1{font-size:16px;margin:18px 0 4px}.sub{color:var(--dim);font-size:13.5px;margin:0 0 6px}
+.authbrand{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:12px}
+.authicon{width:80px;height:80px;border-radius:20px;display:block;box-shadow:0 14px 34px -10px rgba(0,0,0,.65)}
+.authname{font-weight:700;font-size:22px;letter-spacing:-.3px}
+.auth h1{text-align:center;font-size:17px;margin:14px 0 4px}.auth .sub{text-align:center}
 /* app shell */
 .shell{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
 .side{background:var(--surface);border-right:1px solid var(--border);padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
@@ -95,6 +100,8 @@ video{width:100%;border-radius:12px;background:#000;max-height:66vh;margin-top:8
 <body><div id="app" class="center"><div class="sub">Loading…</div></div><div id="toast" class="toast"></div>
 <script>
 const MARK=\`${brandMark}\`, IC=${JSON.stringify(ICONS)};
+const ICON_SRC=${JSON.stringify(iconSrc)};
+function authBrand(){return '<div class="authbrand">'+(ICON_SRC?'<img class="authicon" src="'+ICON_SRC+'"/>':'<span class="mark">'+MARK+'</span>')+'<div class="authname">Tabligh</div></div>'}
 const el=(h)=>{const d=document.createElement('div');d.innerHTML=h.trim();return d.firstElementChild};
 const app=document.getElementById('app');const esc=(s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const T={en:{dashboard:'Dashboard',generate:'Generate',settings:'Settings',queue:'Queue',history:'History',analytics:'Analytics',signout:'Sign out',welcome:'Welcome back',signin_sub:'Sign in to your control panel.',password:'Password',signin:'Sign in',lang:'Language'},
@@ -115,10 +122,10 @@ let EDITIONS=[];
 async function load(){SET=await api('/api/settings');_minio=SET.minioPublic||{};EDITIONS=await api('/api/editions').catch(()=>[])}
 function trSelect(val){return '<select id="c_tr">'+EDITIONS.map(g=>'<optgroup label="'+esc(g.language)+'">'+g.editions.map(e=>'<option value="'+esc(e.id)+'" '+(e.id===val?'selected':'')+'>'+esc(e.name)+'</option>').join('')+'</optgroup>').join('')+'</select>'}
 
-function loginView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>\${t('welcome')}</h1><p class="sub">\${t('signin_sub')}</p><label>\${t('password')}</label><input id="pw" type="password" autofocus/><button class="btn" style="width:100%;margin-top:18px" id="go">\${t('signin')}</button></div>\`));
+function loginView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade">\${authBrand()}<h1>\${t('welcome')}</h1><p class="sub">\${t('signin_sub')}</p><label>\${t('password')}</label><input id="pw" type="password" autofocus/><button class="btn" style="width:100%;margin-top:18px" id="go">\${t('signin')}</button></div>\`));
   const go=async()=>{try{await api('/api/login','POST',{password:pw.value});location.reload()}catch(e){toast(e.message)}};
   document.getElementById("go").onclick=go;pw.onkeydown=e=>e.key==='Enter'&&go();}
-function setupView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade"><div class="brand"><span class="mark">\${MARK}</span>Tabligh</div><h1>Set up your panel</h1><p class="sub">Choose a password. Add API keys later in Settings.</p><label>Panel password</label><input id="pw" type="password"/><label>Timezone</label>\${tzSel("tz","Africa/Tunis")}<button class="btn" style="width:100%;margin-top:18px" id="go">Create panel</button></div>\`));
+function setupView(){app.className='center';app.innerHTML='';app.append(el(\`<div class="auth fade">\${authBrand()}<h1>Set up your panel</h1><p class="sub">Choose a password. Add API keys later in Settings.</p><label>Panel password</label><input id="pw" type="password"/><label>Timezone</label>\${tzSel("tz","Africa/Tunis")}<button class="btn" style="width:100%;margin-top:18px" id="go">Create panel</button></div>\`));
   document.getElementById("go").onclick=async()=>{try{await api('/api/setup','POST',{password:pw.value,settings:{schedule:{tz:tz.value,times:['07:00','13:00','19:00'],enabled:true}}});location.reload()}catch(e){toast(e.message)}};}
 
 const NAV=[['dashboard','dashboard'],['generate','generate'],['schedule','settings'],['queue','queue'],['history','history'],['analytics','analytics']];
