@@ -77,6 +77,27 @@ function statusPayload() {
   };
 }
 
+// ── Login brute-force protection (per-IP, in-memory) ─────────────────────────
+const LOGIN_ATTEMPTS = new Map<string, { count: number; until: number }>();
+const MAX_FAILS = 5;
+const LOCK_MS = 15 * 60 * 1000;
+function clientIp(req: IncomingMessage): string {
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd === 'string' && fwd) return fwd.split(',')[0].trim();
+  return req.socket.remoteAddress ?? 'unknown';
+}
+function loginLock(ip: string): number {
+  const e = LOGIN_ATTEMPTS.get(ip);
+  return e && e.until > Date.now() ? Math.ceil((e.until - Date.now()) / 60000) : 0;
+}
+function registerFail(ip: string): number {
+  const e = LOGIN_ATTEMPTS.get(ip) ?? { count: 0, until: 0 };
+  e.count++;
+  if (e.count >= MAX_FAILS) e.until = Date.now() + LOCK_MS;
+  LOGIN_ATTEMPTS.set(ip, e);
+  return Math.max(0, MAX_FAILS - e.count);
+}
+
 async function api(req: IncomingMessage, res: ServerResponse, path: string): Promise<void> {
   const method = req.method ?? 'GET';
 
@@ -96,12 +117,17 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   }
 
   if (path === '/api/login' && method === 'POST') {
+    const ip = clientIp(req);
+    const mins = loginLock(ip);
+    if (mins > 0) return json(res, 429, { error: `Too many attempts — locked for ${mins} more minute(s).` });
     const b = await readBody(req);
     if (verifyPassword(String(b.password ?? ''), secrets().panelPasswordHash)) {
+      LOGIN_ATTEMPTS.delete(ip); // reset on success
       setSession(res);
       return json(res, 200, { ok: true });
     }
-    return json(res, 401, { error: 'wrong password' });
+    const left = registerFail(ip);
+    return json(res, 401, { error: left > 0 ? `Wrong password — ${left} attempt(s) left.` : 'Too many attempts — locked for 15 minutes.' });
   }
 
   if (path === '/api/logout' && method === 'POST') {

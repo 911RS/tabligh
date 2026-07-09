@@ -7,6 +7,8 @@ import { listChannels, isConfigured } from './publish/buffer.js';
 import type { PostMode } from './publish/buffer.js';
 import { serve } from './serve.js';
 import { runWizard } from './wizard.js';
+import { hashPassword } from './auth.js';
+import { updateSecrets, markSetupComplete } from './store/store.js';
 import { log } from './util/log.js';
 
 /** Tiny flag parser: --key value / --flag (boolean). */
@@ -109,6 +111,21 @@ async function main() {
       for (const c of channels) console.log(`${c.service.padEnd(12)} ${c.id}  ${c.name}`);
       break;
     }
+    case 'set-password': {
+      // Reset the control-panel password from the server (e.g. via docker exec).
+      let pw = (rest[0] && !rest[0].startsWith('--')) ? rest[0] : (flags.password as string | undefined);
+      if (!pw) {
+        const { createInterface } = await import('node:readline/promises');
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        pw = (await rl.question('New panel password: ')).trim();
+        rl.close();
+      }
+      if (!pw || pw.length < 4) { log.error('Password must be at least 4 characters.'); process.exit(1); }
+      updateSecrets({ panelPasswordHash: hashPassword(pw) });
+      markSetupComplete();
+      log.ok('Panel password updated — log in with the new password.');
+      break;
+    }
     default:
       console.log(`tabligh
 
@@ -128,6 +145,7 @@ Commands:
   auto      One-shot cron job: prune, then render + publish a random reel
   prune     Delete stale assets (MinIO objects + local work dirs)
   channels  List Buffer channels for setup
+  set-password [pw]  Reset the control-panel password
 `);
   }
 }
