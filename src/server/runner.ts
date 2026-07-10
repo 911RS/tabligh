@@ -44,7 +44,11 @@ export async function runJob(opts: { jobOverride?: Partial<Job>; publish: boolea
       id, ts: new Date().toISOString(),
       surah: reel.surah, ayahFrom: reel.ayahFrom, ayahTo: reel.ayahTo,
       reciter: reel.reciter, reciterName: reel.reciterName,
-      key: `${reel.surah}:${reel.ayahFrom}-${reel.ayahTo}`,
+      // Dedup key uses the INTENDED (pre-render) range so it matches what
+      // pickRandomJob checks against postedKeys(). The reel's range can differ
+      // when the duration cap trims trailing ayahs (maxDurationSeconds > 0);
+      // keying on the trimmed range would let the same picked passage re-post.
+      key: `${job.surah}:${job.ayahFrom}-${job.ayahTo}`,
     } as const;
 
     if (opts.publish && isConfigured()) {

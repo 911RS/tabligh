@@ -36,8 +36,18 @@ async function processAyahAudio(rawMp3: string, destWav: string): Promise<string
     ]);
     return destWav;
   } catch {
-    log.warn(`audio processing failed for ${rawMp3}; using raw`);
-    return rawMp3;
+    // Retry without the cleanup filter chain (the usual failure point) but STILL
+    // produce a uniform 44.1k/stereo/pcm WAV. Returning the raw MP3 here would put
+    // an odd-rate/mono/MP3 segment into the concat demuxer alongside the WAVs,
+    // which requires consistent stream params → desync/garbled audio.
+    log.warn(`audio cleanup failed for ${rawMp3}; re-encoding without trims`);
+    try {
+      await run('ffmpeg', ['-y', '-i', rawMp3, '-ar', '44100', '-ac', '2', '-c:a', 'pcm_s16le', destWav]);
+      return destWav;
+    } catch {
+      log.warn(`audio re-encode also failed for ${rawMp3}; using raw (may affect concat)`);
+      return rawMp3;
+    }
   }
 }
 

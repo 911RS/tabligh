@@ -1,10 +1,12 @@
 import { createInterface } from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
+import { stdout } from 'node:process';
 import { randomBytes } from 'node:crypto';
 import { loadStore, updateSettings, updateSecrets, markSetupComplete, settings, secrets, type Settings } from './store/store.js';
 import { hashPassword } from './auth.js';
 import { startPanel } from './panel/daemon.js';
 import { openBrowser } from './util/openBrowser.js';
+import { openPromptInput } from './util/promptStream.js';
+import { select } from './util/select.js';
 
 const C = {
   b: (s: string) => `\x1b[1m${s}\x1b[0m`,
@@ -20,32 +22,43 @@ const C = {
  * password, then writes everything to the persisted store.
  */
 export async function runWizard(): Promise<void> {
-  const rl = createInterface({ input: stdin, output: stdout });
   const s = settings();
   const sec = secrets();
 
+  // Each free-text prompt opens its own short-lived readline over a fresh
+  // /dev/tty stream (openPromptInput). We deliberately do NOT hold one readline
+  // open for the whole wizard: the `select()` pickers below open their own
+  // /dev/tty in raw mode, and two live readers on the same terminal would race.
   const ask = async (q: string, def = ''): Promise<string> => {
+    const { input, cleanup } = openPromptInput();
+    const rl = createInterface({ input, output: stdout, terminal: false });
     const hint = def ? C.dim(` (${def})`) : '';
     const a = (await rl.question(`  ${q}${hint} ${C.dim('›')} `)).trim();
+    rl.close(); cleanup();
     return a || def;
   };
   const askSecret = async (q: string, existing = ''): Promise<string> => {
+    const { input, cleanup } = openPromptInput();
+    const rl = createInterface({ input, output: stdout, terminal: false });
     const masked = existing ? C.dim(' (leave blank to keep current)') : '';
     const a = (await rl.question(`  ${q}${masked} ${C.dim('›')} `)).trim();
+    rl.close(); cleanup();
     return a || existing;
   };
-  const yesNo = async (q: string, def: boolean): Promise<boolean> => {
-    const a = (await rl.question(`  ${q} ${C.dim(def ? '(Y/n)' : '(y/N)')} ${C.dim('›')} `)).trim().toLowerCase();
-    if (!a) return def;
-    return a === 'y' || a === 'yes';
-  };
+  // Yes/No is a choice too → arrow-key picker, not typed text.
+  const yesNo = async (q: string, def: boolean): Promise<boolean> =>
+    (await select<'yes' | 'no'>(q, [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }], def ? 'yes' : 'no')) === 'yes';
 
   console.log(`\n${C.g('Tabligh — setup')}\n${C.dim('   Answer a few questions. Press Enter to accept the default.')}\n`);
 
   // ── Backgrounds ──────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Backgrounds'));
-  const bgSourceRaw = (await ask('Source: auto / pexels / unsplash / local', s.content.backgroundSource)).toLowerCase();
-  const bgSource = (['auto', 'pexels', 'unsplash', 'local'].includes(bgSourceRaw) ? bgSourceRaw : 'auto') as Settings['content']['backgroundSource'];
+  const bgSource = await select<Settings['content']['backgroundSource']>('Source', [
+    { value: 'auto', label: 'auto', hint: 'Pexels + Unsplash, whichever has a key' },
+    { value: 'pexels', label: 'pexels' },
+    { value: 'unsplash', label: 'unsplash' },
+    { value: 'local', label: 'local', hint: 'your own folder of portrait images' },
+  ], s.content.backgroundSource);
   let bgLocalDir = s.content.backgroundLocalDir;
   let pexelsKey = sec.pexelsKey;
   let unsplashKey = sec.unsplashKey;
@@ -59,7 +72,7 @@ export async function runWizard(): Promise<void> {
   // ── Storage ──────────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Object storage (public URL the publisher fetches the video from)'));
   const minioEndpoint = await ask('S3/MinIO endpoint host', sec.minio.endpoint);
-  const minioPort = Number(await ask('Port', String(sec.minio.port || 9000)));
+  const minioPort = Number(await ask('Port', String(sec.minio.port || 9000))) || (sec.minio.port || 9000);
   const minioSSL = await yesNo('Use SSL?', sec.minio.useSSL);
   const minioAccessKey = await askSecret('Access key', sec.minio.accessKey);
   const minioSecretKey = await askSecret('Secret key', sec.minio.secretKey);
@@ -83,15 +96,19 @@ export async function runWizard(): Promise<void> {
   // ── Content ──────────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Content'));
   const translationEdition = await ask('Translation edition (e.g. en.sahih, fr.hamidullah, "" for none)', s.content.translationEdition);
-  const randomMinAyahs = Number(await ask('Min ayahs per reel', String(s.content.randomMinAyahs)));
-  const randomMaxAyahs = Number(await ask('Max ayahs per reel', String(s.content.randomMaxAyahs)));
+  // `|| default` guards against non-numeric input (Number('abc') → NaN → persisted as null).
+  const randomMinAyahs = Math.max(1, Number(await ask('Min ayahs per reel', String(s.content.randomMinAyahs))) || s.content.randomMinAyahs);
+  const randomMaxAyahs = Math.max(randomMinAyahs, Number(await ask('Max ayahs per reel', String(s.content.randomMaxAyahs))) || s.content.randomMaxAyahs);
   const basmalaAlways = await yesNo('Add Bismillah before EVERY passage? (passages starting at ayah 1 always get it)', s.content.basmala === 'always');
   const basmala = (basmalaAlways ? 'always' : 'off') as Settings['content']['basmala'];
 
   // ── Branding ─────────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Branding'));
-  const tplRaw = (await ask('Template: classic / glass / noor', s.branding.template)).toLowerCase();
-  const template = (['classic', 'glass', 'noor'].includes(tplRaw) ? tplRaw : 'classic') as Settings['branding']['template'];
+  const template = await select<Settings['branding']['template']>('Template', [
+    { value: 'classic', label: 'classic', hint: 'photo + scrim' },
+    { value: 'glass', label: 'glass', hint: 'glassmorphism' },
+    { value: 'noor', label: 'noor', hint: 'divine light (gold)' },
+  ], s.branding.template);
   const karaokeEnabled = await yesNo('Karaoke word-fill?', s.branding.karaokeEnabled);
   const textFillColor = await ask('Filled text color (hex)', s.branding.textFillColor || '#ffffff');
   const watermarkEnabled = await yesNo('Show corner logo watermark? (put a PNG at assets/logo.png)', s.branding.watermarkEnabled);
@@ -105,7 +122,6 @@ export async function runWizard(): Promise<void> {
 
   // ── Finish ───────────────────────────────────────────────────────────────
   const startNow = await yesNo('Start the control panel now?', true);
-  rl.close();
 
   // ── Persist ──────────────────────────────────────────────────────────────
   updateSecrets({

@@ -6,6 +6,28 @@ import { t, LANG_LABELS } from './i18n.js';
 import { TextInput } from './components.js';
 import { NavList, type NavItem } from './ui.js';
 
+/**
+ * A single-choice list picker with its own highlight state. `NavList` is fully
+ * controlled, so it needs a real `setIndex` — passing a no-op freezes the
+ * highlight on the current value and makes every option un-selectable.
+ */
+function EnumPicker<T extends string>({ title, items, current, onPick, onBack }: {
+  title: string;
+  items: { key: T; label: string }[];
+  current: T;
+  onPick: (key: T) => void;
+  onBack: () => void;
+}) {
+  const [idx, setIdx] = useState(() => Math.max(0, items.findIndex((o) => o.key === current)));
+  return (
+    <Box flexDirection="column">
+      <Text bold color="cyan">{title}</Text>
+      <NavList items={items} index={Math.min(idx, items.length - 1)} setIndex={setIdx} isActive
+        onBack={onBack} onSelect={(it) => onPick(it.key as T)} />
+    </Box>
+  );
+}
+
 interface Draft {
   lang: UiLang;
   template: Template;
@@ -76,24 +98,23 @@ export function SettingsSection({
       onSubmit={(v) => { setDraft({ ...draft, [edit.key]: v }); setEdit(null); }} onCancel={() => setEdit(null)} />;
   }
   if (active && enumOpen === 'lang') {
-    return <Box flexDirection="column"><Text bold color="cyan">{t('chooseLanguage', lang)}</Text>
-      <NavList items={UI_LANGS.map((l) => ({ key: l, label: LANG_LABELS[l] }))} index={Math.max(0, UI_LANGS.indexOf(draft.lang))} setIndex={() => {}} isActive
-        onBack={() => setEnumOpen(null)} onSelect={(it) => { setDraft({ ...draft, lang: it.key as UiLang }); setEnumOpen(null); }} /></Box>;
+    return <EnumPicker title={t('chooseLanguage', lang)} current={draft.lang}
+      items={UI_LANGS.map((l) => ({ key: l, label: LANG_LABELS[l] }))}
+      onBack={() => setEnumOpen(null)} onPick={(k) => { setDraft({ ...draft, lang: k }); setEnumOpen(null); }} />;
   }
   if (active && enumOpen === 'tpl') {
     const labels: Record<Template, string> = { classic: 'Classic (photo + scrim)', glass: 'Glassmorphism', noor: 'Noor · Divine Light (gold)' };
-    return <Box flexDirection="column"><Text bold color="cyan">Template</Text>
-      <NavList items={TEMPLATES.map((tp) => ({ key: tp, label: labels[tp] }))} index={Math.max(0, TEMPLATES.indexOf(draft.template))} setIndex={() => {}} isActive
-        onBack={() => setEnumOpen(null)} onSelect={(it) => { setDraft({ ...draft, template: it.key as Template }); setEnumOpen(null); }} /></Box>;
+    return <EnumPicker title="Template" current={draft.template}
+      items={TEMPLATES.map((tp) => ({ key: tp, label: labels[tp] }))}
+      onBack={() => setEnumOpen(null)} onPick={(k) => { setDraft({ ...draft, template: k }); setEnumOpen(null); }} />;
   }
   if (active && enumOpen === 'bg') {
     const opts: { key: BackgroundSource; label: string }[] = [
       { key: 'auto', label: t('bgAuto', lang) }, { key: 'pexels', label: t('bgPexels', lang) },
       { key: 'unsplash', label: t('bgUnsplash', lang) }, { key: 'local', label: t('bgLocal', lang) },
     ];
-    return <Box flexDirection="column"><Text bold color="cyan">{t('setBackground', lang)}</Text>
-      <NavList items={opts} index={Math.max(0, opts.findIndex((o) => o.key === draft.backgroundSource))} setIndex={() => {}} isActive
-        onBack={() => setEnumOpen(null)} onSelect={(it) => { setDraft({ ...draft, backgroundSource: it.key as BackgroundSource }); setEnumOpen(null); }} /></Box>;
+    return <EnumPicker title={t('setBackground', lang)} current={draft.backgroundSource} items={opts}
+      onBack={() => setEnumOpen(null)} onPick={(k) => { setDraft({ ...draft, backgroundSource: k }); setEnumOpen(null); }} />;
   }
 
   const nav: NavItem[] = [

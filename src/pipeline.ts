@@ -28,9 +28,12 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   // Surah meta first — it drives the effective ayah range.
   const surahMeta = await fetchSurahMeta(job.surah);
 
-  // Effective range: clamp to the surah, and if the surah is short, render it whole.
-  let ayahFrom = job.ayahFrom;
-  let ayahTo = Math.min(job.ayahTo, surahMeta.numberOfAyahs);
+  // Effective range: clamp BOTH ends to the surah, and if the surah is short,
+  // render it whole. Clamping ayahFrom too prevents an out-of-range manual/queued
+  // job (e.g. ayahFrom past the surah end) from producing ayahFrom > ayahTo, which
+  // yields an empty passage and crashes ffmpeg with no input.
+  let ayahFrom = Math.max(1, Math.min(job.ayahFrom, surahMeta.numberOfAyahs));
+  let ayahTo = Math.max(ayahFrom, Math.min(job.ayahTo, surahMeta.numberOfAyahs));
   const maxFull = settings().content.fullSurahMaxAyahs;
   if (maxFull > 0 && surahMeta.numberOfAyahs <= maxFull) {
     ayahFrom = 1;
