@@ -75,7 +75,7 @@ export async function renderFrames(
   const sceneAyahs: SceneAyah[] = reel.ayahs.map((a) => ({
     words: computeWordTimings(a.arabic, a.startMs, a.endMs),
     translation: a.translation,
-    numArabic: toArabicDigits(a.ayah),
+    numArabic: a.ayah === 0 ? '' : toArabicDigits(a.ayah),
     startMs: a.startMs,
     endMs: a.endMs,
   }));
@@ -111,6 +111,7 @@ export async function renderFrames(
     particles: settings().branding.particlesEnabled,
     bgAnimation: settings().branding.bgAnimationEnabled,
     projectCredit: settings().branding.projectCreditEnabled,
+    template: settings().branding.template,
     seed: opts.seed,
   });
 

@@ -4,7 +4,7 @@ import { type Job } from './config.js';
 import { settings } from './store/store.js';
 import { resolveReciter, reciterDisplayName } from './quran/reciters.js';
 import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
-import { downloadTimedAyahs, concatAudio } from './quran/audio.js';
+import { downloadTimedAyahs, concatAudio, downloadBasmala } from './quran/audio.js';
 import { log } from './util/log.js';
 import { resolveBackground } from './render/background.js';
 import { renderFrames } from './render/frames.js';
@@ -63,6 +63,20 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
     ayahTo = ayahFrom + ayahs.length - 1;
   }
 
+  // Bismillah intro. Hard rule: a passage that starts at ayah 1 always opens with
+  // the basmala. The 'always' setting adds it to every passage too. Skipped for
+  // At-Tawbah (no basmala) and for Al-Fatiha 1:1 (which already IS the basmala).
+  const basmalaMode = settings().content.basmala;
+  const isTawbah = job.surah === 9;
+  const fatihaOpening = job.surah === 1 && ayahFrom === 1;
+  const includeBasmala = !isTawbah && !fatihaOpening && (ayahFrom === 1 || basmalaMode === 'always');
+  if (includeBasmala) {
+    log.step('Prepending Bismillah (reciter 1:1)…');
+    const basmala = await downloadBasmala(reciterFolder, workDir);
+    const shift = basmala.endMs;
+    ayahs = [basmala, ...ayahs.map((a) => ({ ...a, startMs: a.startMs + shift, endMs: a.endMs + shift }))];
+  }
+
   log.step('Concatenating recitation…');
   const { file: audioFile, durationMs } = await concatAudio(ayahs, workDir);
   log.ok(`Passage audio ${(durationMs / 1000).toFixed(2)}s → ${audioFile}`);
@@ -79,7 +93,8 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
     ayahs,
     audioFile,
     durationMs,
-    hasBasmala: text.some((a) => a.strippedBasmala),
+    // Header basmala is redundant once we play a full basmala intro.
+    hasBasmala: !includeBasmala && text.some((a) => a.strippedBasmala),
     workDir,
   };
 
@@ -102,7 +117,7 @@ export async function renderReel(job: Job, reel: ReelJob): Promise<RenderResult>
   const seed = Math.floor(Math.random() * 1e9);
 
   log.step('Resolving background…');
-  const background = await resolveBackground(job.background.keywords, job.background.source, seed);
+  const background = await resolveBackground(job.background.keywords, job.background.source, seed, job.background.localDir);
 
   log.step('Rendering animated frames (Aref Ruqaa + karaoke)…');
   const frames = await renderFrames(reel, {

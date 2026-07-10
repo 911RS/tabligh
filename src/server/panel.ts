@@ -13,6 +13,7 @@ import { runJob, isBusy, runnerStatus, findLatestVideo } from './runner.js';
 import { log, recentLogs } from '../util/log.js';
 import { renderPanel } from './ui.js';
 import { TRANSLATION_EDITIONS } from '../i18n.js';
+import { computeStats } from '../store/stats.js';
 
 let _html: string | null = null;
 /** Build the panel HTML once, embedding the vendored Ubuntu fonts + icon. */
@@ -23,20 +24,6 @@ function panelHtml(): string {
   try { icon = readFileSync(join(process.cwd(), 'assets/icon.png')).toString('base64'); } catch { /* optional */ }
   _html = renderPanel({ regular: F('Ubuntu-Regular.ttf'), medium: F('Ubuntu-Medium.ttf'), bold: F('Ubuntu-Bold.ttf') }, icon);
   return _html;
-}
-
-/** Aggregate stats from post history for the analytics view. */
-function computeStats() {
-  const posts = listPosts(2000);
-  const weekAgo = Date.now() - 7 * 86400_000;
-  const byPlatform: Record<string, number> = {};
-  let published = 0, failed = 0, week = 0;
-  for (const p of posts) {
-    if (p.status === 'published') { published++; for (const pf of p.platforms ?? []) byPlatform[pf] = (byPlatform[pf] ?? 0) + 1; }
-    if (p.status === 'failed') failed++;
-    if (Date.parse(p.ts) >= weekAgo) week++;
-  }
-  return { total: posts.length, published, failed, week, byPlatform };
 }
 
 function json(res: ServerResponse, code: number, body: unknown): void {
@@ -234,9 +221,10 @@ function legacy(req: IncomingMessage, res: ServerResponse, url: URL): boolean {
   return false;
 }
 
-/** Start the control-panel HTTP server (API + embedded SPA). */
-export function startServer(): void {
-  http.createServer(async (req, res) => {
+/** Start the control-panel HTTP server (API + embedded SPA). Returns the
+ * server so callers (e.g. `serve`) can close it on shutdown. */
+export function startServer(): http.Server {
+  const server = http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost');
       if (url.pathname.startsWith('/api/')) return await api(req, res, url.pathname);
@@ -247,5 +235,7 @@ export function startServer(): void {
     } catch (e) {
       json(res, 500, { error: e instanceof Error ? e.message : 'server error' });
     }
-  }).listen(env.port, () => log.ok(`Control panel on :${env.port}`));
+  });
+  server.listen(env.port, () => log.ok(`Control panel on :${env.port}`));
+  return server;
 }

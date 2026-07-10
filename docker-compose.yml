@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - "1998:1998"
     volumes:
       - tabligh-data:/app/data   # <- the store lives here, and it persists
 

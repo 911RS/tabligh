@@ -43,6 +43,6 @@ VOLUME ["/app/data"]
 
 # Always-on: self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
 # and serves the control panel + /health on this port.
-EXPOSE 3000
+EXPOSE 1998
 ENTRYPOINT ["node", "dist/cli.js"]
 CMD ["serve"]

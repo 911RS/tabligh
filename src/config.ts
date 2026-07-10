@@ -13,10 +13,12 @@ export const JobSchema = z.object({
   translationEdition: z.string().default('en.sahih'),
   background: z
     .object({
-      source: z.enum(['pexels', 'unsplash', 'auto']).default('auto'),
+      source: z.enum(['pexels', 'unsplash', 'auto', 'local']).default('auto'),
       keywords: z.array(z.string()).default([]),
+      /** Folder of portrait images, used when source === 'local'. */
+      localDir: z.string().default(''),
     })
-    .default({ source: 'auto', keywords: [] }),
+    .default({ source: 'auto', keywords: [], localDir: '' }),
   /** Watermark handle shown on the reel, e.g. "@myaccount". '' = none. */
   watermarkHandle: z.string().default(''),
   /** Post to Buffer/TikTok at the end. Default false = render only. */
@@ -70,8 +72,31 @@ export const env = {
   // dropped until it fits (overrides the min-ayah floor). 0 = no limit.
   maxVideoSeconds: Number(process.env.MAX_VIDEO_SECONDS ?? '0'),
   // HTTP server (serve mode): port + secret for the manual /trigger endpoint.
-  port: Number(process.env.PORT ?? '3000'),
+  port: Number(process.env.PORT ?? '1998'),
   triggerToken: process.env.TRIGGER_TOKEN ?? '',
+  // Serve the control panel? Set PANEL_ENABLED=false (or `serve --no-panel`) to
+  // run headless — scheduler only, no HTTP surface.
+  panelEnabled: process.env.PANEL_ENABLED !== 'false',
+  // Where backgrounds come from: 'auto' (Pexels→Unsplash), a single provider,
+  // or 'local' (a folder of your own portrait images).
+  backgroundSource: ((): 'auto' | 'pexels' | 'unsplash' | 'local' => {
+    const v = (process.env.BACKGROUND_SOURCE ?? 'auto').toLowerCase();
+    return v === 'pexels' || v === 'unsplash' || v === 'local' ? v : 'auto';
+  })(),
+  backgroundLocalDir: process.env.BACKGROUND_LOCAL_DIR ?? '',
+  // Prepend the reciter's Bismillah (Fatiha 1:1): 'always' (every passage) or
+  // 'off'. Passages that start at ayah 1 always get it regardless.
+  basmala: ((): 'off' | 'always' => (process.env.BASMALA ?? 'off').toLowerCase() === 'always' ? 'always' : 'off')(),
+  // Interactive TUI language. Post captions localize separately.
+  uiLang: ((): 'en' | 'ar' | 'fr' | 'ur' | 'id' | 'tr' | 'ms' | 'bn' | 'fa' | 'es' => {
+    const v = (process.env.UI_LANG ?? 'en').toLowerCase();
+    return (['ar', 'fr', 'ur', 'id', 'tr', 'ms', 'bn', 'fa', 'es'] as const).includes(v as never) ? (v as 'ar') : 'en';
+  })(),
+  // Visual template for the rendered reel: classic | glass | noor.
+  template: ((): 'classic' | 'glass' | 'noor' => {
+    const v = (process.env.TEMPLATE ?? 'classic').toLowerCase();
+    return v === 'glass' || v === 'noor' ? v : 'classic';
+  })(),
   // Karaoke word-by-word fill synced to the recitation.
   karaokeEnabled: (process.env.KARAOKE_ENABLED ?? 'true') === 'true',
   // Drifting particle glints and animated background zoom.

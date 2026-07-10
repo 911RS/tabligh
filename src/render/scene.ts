@@ -1,4 +1,5 @@
 import type { Background } from './background.js';
+import type { Template } from '../store/store.js';
 
 export interface KaraokeWord {
   t: string;
@@ -50,7 +51,82 @@ export interface SceneParams {
   bgAnimation: boolean;
   /** Show the "Check the Tabligh project" line (the github link is always shown). */
   projectCredit: boolean;
+  /** Visual template — swaps a CSS theme over the same DOM/animation. */
+  template: Template;
   seed: number;
+}
+
+/**
+ * Per-template CSS overrides, appended AFTER the base rules so equal-specificity
+ * selectors win. The DOM and the animation JS are identical across templates —
+ * only the look changes. `classic` returns nothing (base styles stand).
+ */
+function themeCss(p: SceneParams): string {
+  if (p.template === 'glass') {
+    return `
+/* ── Glassmorphism · ONE persistent frosted card; only the ayah swaps ────── */
+.scrim{background:
+  radial-gradient(140% 70% at 50% 44%, rgba(4,7,10,.16) 0%, rgba(4,7,10,.44) 60%, rgba(3,5,8,.78) 100%),
+  linear-gradient(180deg, rgba(3,5,8,.5) 0%, rgba(3,5,8,.16) 30%, rgba(3,5,8,.3) 64%, rgba(3,5,8,.8) 100%)}
+/* The safe area IS the single card. Header, ayah and reciter all live inside it;
+   as ayahs advance only the text inside changes — the card never moves.
+   Plain, normal glassmorphism: frosted translucent panel + blur + 1px light
+   border + soft shadow. No specular sheen / liquid-glass highlights. */
+.safe{border-radius:48px;overflow:hidden;
+  background:rgba(255,255,255,.11);
+  -webkit-backdrop-filter:blur(26px) saturate(130%);backdrop-filter:blur(26px) saturate(130%);
+  border:1px solid rgba(255,255,255,.24);
+  box-shadow:0 30px 80px rgba(0,0,0,.42)}
+/* One card → no top progress line, no per-ayah card, no pills. */
+.ptrack,.pfill{display:none}
+.body{background:none;-webkit-backdrop-filter:none;backdrop-filter:none;border:none;box-shadow:none;padding:0;max-width:none}
+.body::before{display:none}
+/* Lay out the three zones inside the card, each with its own breathing room, and
+   inset them from the frosted border so text never crowds the edge. */
+.header,.stage,.footer,.wave{left:56px;right:56px}
+.header{top:64px}
+.stage{top:330px;bottom:360px}
+.footer{bottom:46px}
+.artext{max-width:760px}
+.trtext{max-width:740px}
+.sname{color:#fff}
+.num{background:rgba(255,255,255,.88);color:#12161f;border:1px solid #fff;
+  box-shadow:0 6px 18px rgba(0,0,0,.3), inset 0 1px 0 #fff}
+.artext{filter:drop-shadow(0 3px 22px rgba(0,0,0,.6))}
+.w{--off:rgba(255,255,255,.5)}
+.trtext{color:rgba(255,255,255,.96);text-shadow:0 2px 14px rgba(0,0,0,.6)}
+/* Dynamic waveform (bars pulse in __setTime and fill with progress). */
+.wave{position:absolute;left:110px;right:110px;bottom:248px;height:54px;display:flex;align-items:flex-end;
+  justify-content:center;gap:6px;direction:ltr}
+.wave span{flex:0 0 5px;border-radius:3px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.35);
+  transform-origin:center bottom;opacity:.3}`;
+  }
+  if (p.template === 'noor') {
+    return `
+/* ── Noor · Divine Light ───────────────────────────────────────────────── */
+/* Warm, reverent, illuminated-manuscript feel: a soft golden halo behind the
+   ayah, gilded numerals, hairline gold rules. */
+.scrim{background:
+  radial-gradient(120% 56% at 50% 42%, rgba(214,178,84,.14) 0%, rgba(6,8,12,.55) 52%, rgba(2,4,7,.92) 100%),
+  linear-gradient(180deg, rgba(2,4,7,.86) 0%, rgba(2,4,7,.38) 26%, rgba(2,4,7,.5) 60%, rgba(2,4,7,.94) 100%)}
+.ayah{display:flex;justify-content:center;align-items:center}
+.body{position:relative;max-width:900px;padding:56px 44px}
+.body::before{content:'';position:absolute;left:50%;top:50%;width:780px;height:540px;
+  transform:translate(-50%,-50%);z-index:-1;pointer-events:none;filter:blur(24px);
+  background:radial-gradient(ellipse at center, rgba(232,204,128,.30) 0%, rgba(232,204,128,.07) 46%, transparent 72%)}
+.sname{color:#f4e8c6;filter:drop-shadow(0 0 18px rgba(214,178,84,.35)) drop-shadow(0 2px 12px rgba(0,0,0,.7))}
+.meta{color:rgba(232,204,128,.9);border-top:1px solid rgba(232,204,128,.35);border-bottom:1px solid rgba(232,204,128,.35);
+  display:inline-block;padding:8px 26px;margin-top:16px}
+.basmala{color:#f4e8c6}
+.num{background:linear-gradient(150deg,#f6e6ac 0%,#d6b254 60%,#b8922f 100%);color:#2a2205;
+  border:1px solid rgba(255,244,208,.7);box-shadow:0 0 26px rgba(214,178,84,.55),0 4px 18px rgba(0,0,0,.5)}
+.artext{color:#fdf7e6;filter:drop-shadow(0 0 30px rgba(214,178,84,.4)) drop-shadow(0 3px 16px rgba(0,0,0,.8))}
+.w{--off:rgba(253,247,230,.4)}
+.trtext{font-style:italic;color:rgba(253,247,230,.95)}
+.footer .lbl{color:rgba(232,204,128,.85);letter-spacing:3px;text-transform:uppercase;font-size:24px}
+.footer b{color:#f4e8c6}`;
+  }
+  return '';
 }
 
 const AR_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -79,7 +155,7 @@ export function buildScene(p: SceneParams): string {
       return `
     <div class="ayah" data-i="${i}" data-start="${a.startMs}" data-end="${a.endMs}">
       <div class="body">
-        <div class="num">${esc(a.numArabic)}</div>
+        ${a.numArabic ? `<div class="num">${esc(a.numArabic)}</div>` : ''}
         <div class="artext" dir="rtl">${words}</div>
         ${a.translation ? `<div class="trtext" dir="ltr">${esc(a.translation)}</div>` : ''}
       </div>
@@ -96,6 +172,20 @@ export function buildScene(p: SceneParams): string {
         : '';
 
   const cfg = { duration: p.durationMs, outro: p.outroMs, seed: p.seed, count: p.ayahs.length, karaoke: p.karaoke, particles: p.particles, bgAnimation: p.bgAnimation };
+  // Glass template signature: an audio waveform that doubles as the progress bar.
+  // Bar heights are RANDOM per video (seeded), so every reel gets a unique wave;
+  // they fill left→right with the recitation progress (driven in __setTime).
+  let wseed = (p.seed >>> 0) || 1;
+  const wrand = () => {
+    wseed = (wseed + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(wseed ^ (wseed >>> 15), 1 | wseed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const waveHtml =
+    p.template === 'glass'
+      ? `<div class="wave" id="wave">${Array.from({ length: 52 }, () => `<span style="height:${12 + Math.round(82 * wrand())}%"></span>`).join('')}</div>`
+      : '';
   // Outro card: logo (only when the logo/watermark is enabled) stacked above the
   // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
   // A small project credit sits subtly beneath it.
@@ -126,8 +216,8 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
   radial-gradient(135% 62% at 50% 48%, rgba(4,7,10,.30) 0%, rgba(4,7,10,.62) 58%, rgba(3,5,8,.86) 100%),
   linear-gradient(180deg, rgba(3,5,8,.78) 0%, rgba(3,5,8,.34) 22%, rgba(3,5,8,.44) 58%, rgba(3,5,8,.86) 100%)}
 .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.p{position:absolute;border-radius:50%;background:#fff;
-  box-shadow:0 0 6px 1px rgba(255,255,255,.9),0 0 2px rgba(255,255,255,1);will-change:transform,opacity}
+.p{position:absolute;left:0;top:0;border-radius:50%;background:#fff;
+  box-shadow:0 0 4px rgba(255,255,255,.5);will-change:transform,opacity}
 .ptrack{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.14)}
 .pfill{position:absolute;top:0;left:0;height:6px;width:0;background:${p.fillColor};box-shadow:0 0 12px ${p.fillColor}}
 .safe{position:absolute;left:${SAFE.side}px;right:${SAFE.side}px;top:${SAFE.top}px;bottom:${SAFE.bottom}px}
@@ -183,6 +273,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .end-credit .gh{width:1.06em;height:1.06em;opacity:.9;flex:none}
 /* Compact (project text hidden): shrink the link a little. */
 .end-foot.compact .end-credit{font-size:26px;letter-spacing:.4px}
+${themeCss(p)}
 </style></head>
 <body>
   <div class="bg" id="bg"></div>
@@ -196,6 +287,7 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
       ${p.showBasmala ? `<div class="basmala" dir="rtl">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>` : ''}
     </div>
     <div class="stage" id="stage">${ayahLayers}</div>
+    ${waveHtml}
     <div class="footer">
       <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
       <span class="lbl">Recited by</span>
@@ -215,11 +307,14 @@ let particles=[];
 window.__setup=function(){
   const rnd=mulberry32(CFG.seed);
   const host=document.getElementById('particles');
-  for(let i=0;CFG.particles&&i<70;i++){
+  // Sparse & gentle: only ~14 total so 5–15 are ever visible at once.
+  for(let i=0;CFG.particles&&i<14;i++){
     const el=document.createElement('div');el.className='p';
-    // Small, crisp glints (2–6px) — sharp cores with a tight glow, not soft blobs.
-    const size=2+rnd()*4;el.style.width=size+'px';el.style.height=size+'px';
-    particles.push({el,x:rnd()*1080,baseY:rnd()*1920,speed:9+rnd()*22,amp:14+rnd()*44,drift:0.12+rnd()*0.45,phase:rnd()*6.28,op:0.45+rnd()*0.5,tw:0.7+rnd()*1.4});
+    // Small CRISP dots (2–5px), not glowy blobs.
+    const size=2+rnd()*3;el.style.width=size+'px';el.style.height=size+'px';
+    // Emit from the lower area, biased toward centre; rise only a little (220–640px)
+    // then fade out. Staggered lifetimes so a few are always drifting up.
+    particles.push({el,x:540+(rnd()-0.5)*880,y0:1560+rnd()*380,rise:220+rnd()*420,life:5+rnd()*5,t0:rnd()*10,sway:8+rnd()*22,swf:0.3+rnd()*0.5,phase:rnd()*6.28,maxOp:0.5+rnd()*0.5});
     host.appendChild(el);
   }
   // Fit: shrink Arabic; if a tall ayah, drop its translation; clamp as last resort.
@@ -250,11 +345,21 @@ window.__setTime=function(ms){
   const zoom=CFG.bgAnimation ? 1+0.11*(ms/dur)+0.014*Math.sin(sec*0.5) : 1.02;
   document.getElementById('bg').style.transform='scale('+zoom.toFixed(4)+')';
   document.getElementById('pfill').style.width=(Math.min(1,ms/dur)*1080).toFixed(1)+'px';
+  // Glass template's waveform doubles as the progress bar: static bar heights,
+  // filled left→right as the recitation progresses (played = bright, upcoming = dim).
+  const wave=document.getElementById('wave');
+  if(wave){const prog=Math.min(1,ms/dur),bars=wave.children,n=bars.length,front=prog*n;
+    for(let i=0;i<n;i++){const f=Math.max(0,Math.min(1,front-i));// 0..1 how filled this bar is
+      bars[i].style.opacity=(0.22+0.76*f).toFixed(3);}}
   for(const p of particles){
-    let y=p.baseY-sec*p.speed;y=((y%1920)+1920)%1920;
-    const x=p.x+Math.sin(sec*p.drift+p.phase)*p.amp;
+    // Cyclic life 0→1: rises a short way up from its low start, fading in fast then
+    // out as it climbs — a soft drift of light rising from the bottom.
+    const age=((((sec+p.t0)%p.life)+p.life)%p.life)/p.life;
+    const y=p.y0-age*p.rise;
+    const x=p.x+Math.sin(sec*p.swf+p.phase)*p.sway;
+    const o=age<0.15?age/0.15:Math.max(0,1-(age-0.15)/0.85);
     p.el.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
-    p.el.style.opacity=(p.op*(0.5+0.5*Math.sin(sec*p.tw+p.phase))).toFixed(3);
+    p.el.style.opacity=(o*p.maxOp).toFixed(3);
   }
   document.querySelectorAll('.ayah').forEach((el)=>{
     const s=+el.dataset.start, e=+el.dataset.end;

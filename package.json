@@ -2,7 +2,7 @@
   "name": "tabligh",
   "version": "0.1.0",
   "private": true,
-  "description": "Tabligh \u2014 auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
+  "description": "Tabligh — auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
   "type": "module",
   "license": "MIT",
   "author": "911RS",
@@ -44,12 +44,17 @@
   },
   "dependencies": {
     "dotenv": "^16.4.7",
+    "ink": "^5.2.1",
+    "ink-big-text": "^2.0.0",
+    "ink-gradient": "^3.0.0",
     "minio": "^8.0.6",
     "puppeteer": "^24.40.0",
+    "react": "^18.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "@types/react": "^18.3.31",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   },

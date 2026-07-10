@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { extname, join } from 'node:path';
 import { secrets } from '../store/store.js';
 import { log } from '../util/log.js';
 import { BACKGROUND_KEYWORDS, altIsSafe } from './keywords.js';
@@ -76,15 +78,46 @@ async function searchUnsplash(query: string): Promise<Found | null> {
   };
 }
 
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
+
+/** Pick a random portrait image from a local folder, embedded as a data-URI. */
+function resolveLocal(dir: string, seed: number): Background {
+  let files: string[] = [];
+  try {
+    files = readdirSync(dir).filter((f) => IMAGE_EXTS.has(extname(f).toLowerCase()));
+  } catch {
+    log.warn(`Local background folder not readable: ${dir} — using gradient fallback`);
+    return gradientFor(seed);
+  }
+  if (!files.length) {
+    log.warn(`No images (${[...IMAGE_EXTS].join('/')}) in ${dir} — using gradient fallback`);
+    return gradientFor(seed);
+  }
+  const file = files[seed % files.length];
+  const buf = readFileSync(join(dir, file));
+  const ext = extname(file).toLowerCase().slice(1);
+  const mime = ext === 'jpg' ? 'jpeg' : ext;
+  log.step(`Background: local image "${file}"`);
+  return { css: `url('data:image/${mime};base64,${buf.toString('base64')}')`, kind: 'image' };
+}
+
 /**
- * Resolve a portrait background for the given keywords (Pexels→Unsplash),
- * embedding it as a data-URI. Falls back to a seeded gradient with no credit.
+ * Resolve a portrait background for the given keywords (Pexels→Unsplash), a local
+ * folder, embedding it as a data-URI. Falls back to a seeded gradient with no credit.
  */
 export async function resolveBackground(
   keywords: string[],
-  source: 'pexels' | 'unsplash' | 'auto',
+  source: 'pexels' | 'unsplash' | 'auto' | 'local',
   seed: number,
+  localDir = '',
 ): Promise<Background> {
+  if (source === 'local') {
+    if (!localDir.trim()) {
+      log.warn('Background source is "local" but no folder is set — using gradient fallback');
+      return gradientFor(seed);
+    }
+    return resolveLocal(localDir.trim(), seed);
+  }
   const provided = keywords.filter(Boolean).join(' ').trim();
   // The strict person-filter can reject a whole page, so we keep trying DIFFERENT
   // safe scenes (and both sources) until one yields a person-free photo. A gradient

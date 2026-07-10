@@ -21,6 +21,7 @@ export const RECITERS: Reciter[] = [
   { id: 'abdulbasit', name: 'Abdul Basit (Murattal)', folder: 'Abdul_Basit_Murattal_192kbps', style: 'murattal' },
   { id: 'ayyoub', name: 'Muhammad Ayyoub', folder: 'Muhammad_Ayyoub_128kbps', style: 'murattal' },
   { id: 'shuraym', name: 'Saud Ash-Shuraim', folder: 'Saood_ash-Shuraym_128kbps', style: 'murattal' },
+  { id: 'tunaiji', name: 'Khalefa Al-Tunaiji', folder: 'khalefa_al_tunaiji_64kbps', style: 'murattal' },
 ];
 
 /** Resolve a reciter by id, name, or raw everyayah folder string. */

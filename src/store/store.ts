@@ -11,6 +11,18 @@ import type { PostMode } from '../publish/buffer.js';
  * swapped for SQLite/Postgres when this goes multi-tenant.
  */
 
+export type UiLang = 'en' | 'ar' | 'fr' | 'ur' | 'id' | 'tr' | 'ms' | 'bn' | 'fa' | 'es';
+export const UI_LANGS: UiLang[] = ['en', 'ar', 'fr', 'ur', 'id', 'tr', 'ms', 'bn', 'fa', 'es'];
+export type BackgroundSource = 'auto' | 'pexels' | 'unsplash' | 'local';
+/** Visual template for the rendered reel. */
+export type Template = 'classic' | 'glass' | 'noor';
+export const TEMPLATES: Template[] = ['classic', 'glass', 'noor'];
+/** Prepend the reciter's Bismillah (Fatiha 1:1) before a passage.
+ *  off = only when the passage starts at ayah 1 (this rule always applies) ·
+ *  always = before every passage. Ayah-1 passages get the basmala either way. */
+export type BasmalaMode = 'off' | 'always';
+export const BASMALA_MODES: BasmalaMode[] = ['off', 'always'];
+
 export interface Settings {
   schedule: { tz: string; times: string[]; enabled: boolean };
   content: {
@@ -23,8 +35,18 @@ export interface Settings {
      * ayahs are dropped until the passage fits. */
     maxDurationSeconds: number;
     backgroundKeywords: string[];
+    /** Where background images come from. 'local' picks from backgroundLocalDir. */
+    backgroundSource: BackgroundSource;
+    /** Folder of your own portrait images, used when backgroundSource === 'local'. */
+    backgroundLocalDir: string;
+    /** Prepend the reciter's own Bismillah before the passage. */
+    basmala: BasmalaMode;
   };
+  /** Interactive terminal UI preferences. */
+  ui: { lang: UiLang };
   branding: {
+    /** Visual style of the rendered reel. */
+    template: Template;
     watermarkEnabled: boolean;
     watermarkHandle: string;
     textFillColor: string;
@@ -111,8 +133,13 @@ function seedFromEnv(): StoreData {
         randomMaxAyahs: env.randomMaxAyahs,
         maxDurationSeconds: env.maxVideoSeconds,
         backgroundKeywords: [],
+        backgroundSource: env.backgroundSource,
+        backgroundLocalDir: env.backgroundLocalDir,
+        basmala: env.basmala,
       },
+      ui: { lang: env.uiLang },
       branding: {
+        template: env.template,
         watermarkEnabled: env.watermarkEnabled,
         watermarkHandle: process.env.WATERMARK_HANDLE || '',
         textFillColor: env.textFillColor,

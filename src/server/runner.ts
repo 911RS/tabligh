@@ -26,8 +26,15 @@ export async function runJob(opts: { jobOverride?: Partial<Job>; publish: boolea
   const id = randomBytes(6).toString('hex');
   try {
     await prune();
+    const c = settings().content;
     const job: Job = opts.jobOverride
-      ? JobSchema.parse({ reciter: 'husary', ...opts.jobOverride, publish: opts.publish })
+      ? JobSchema.parse({
+          reciter: c.reciter || 'husary',
+          translationEdition: c.translationEdition,
+          background: { source: c.backgroundSource, keywords: c.backgroundKeywords, localDir: c.backgroundLocalDir },
+          ...opts.jobOverride,
+          publish: opts.publish,
+        })
       : await pickRandomJob({ publish: opts.publish });
 
     lastStatus = `rendering ${job.surah}:${job.ayahFrom}-${job.ayahTo}`;

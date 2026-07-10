@@ -81,6 +81,27 @@ export async function downloadTimedAyahs(
   return timed;
 }
 
+/** The Bismillah text (matches Fatiha 1:1 / the stripped basmala). */
+export const BASMALA_TEXT = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+
+/**
+ * Download the reciter's own Bismillah (everyayah 001001 = Fatiha 1:1), clean it,
+ * and return it as a timed pseudo-ayah [0, duration]. `ayah:0` marks it as the
+ * basmala intro (no ayah-number medallion is drawn for it).
+ */
+export async function downloadBasmala(reciterFolder: string, workDir: string): Promise<TimedAyah> {
+  const audioDir = join(workDir, 'audio');
+  await mkdir(audioDir, { recursive: true });
+  const url = everyayahUrl(reciterFolder, 1, 1);
+  const raw = join(audioDir, 'basmala.raw.mp3');
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`everyayah ${res.status} for basmala — folder "${reciterFolder}" (${url})`);
+  await writeFile(raw, Buffer.from(await res.arrayBuffer()));
+  const audioFile = await processAyahAudio(raw, join(audioDir, 'basmala.wav'));
+  const durMs = await probeDurationMs(audioFile);
+  return { surah: 1, ayah: 0, key: 'basmala', arabic: BASMALA_TEXT, translation: '', startMs: 0, endMs: durMs, audioFile };
+}
+
 /**
  * Concatenate the per-ayah MP3s into one passage track. Re-encodes to a uniform
  * AAC stream so differing source bitrates/sample-rates concat cleanly.

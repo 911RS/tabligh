@@ -1,8 +1,10 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import { randomBytes } from 'node:crypto';
-import { loadStore, updateSettings, updateSecrets, markSetupComplete, settings, secrets } from './store/store.js';
+import { loadStore, updateSettings, updateSecrets, markSetupComplete, settings, secrets, type Settings } from './store/store.js';
 import { hashPassword } from './auth.js';
+import { startPanel } from './panel/daemon.js';
+import { openBrowser } from './util/openBrowser.js';
 
 const C = {
   b: (s: string) => `\x1b[1m${s}\x1b[0m`,
@@ -41,9 +43,18 @@ export async function runWizard(): Promise<void> {
   console.log(`\n${C.g('Tabligh — setup')}\n${C.dim('   Answer a few questions. Press Enter to accept the default.')}\n`);
 
   // ── Backgrounds ──────────────────────────────────────────────────────────
-  console.log(C.b('\n▸ Backgrounds (stock photos)'));
-  const pexelsKey = await askSecret('Pexels API key', sec.pexelsKey);
-  const unsplashKey = await askSecret('Unsplash Access Key', sec.unsplashKey);
+  console.log(C.b('\n▸ Backgrounds'));
+  const bgSourceRaw = (await ask('Source: auto / pexels / unsplash / local', s.content.backgroundSource)).toLowerCase();
+  const bgSource = (['auto', 'pexels', 'unsplash', 'local'].includes(bgSourceRaw) ? bgSourceRaw : 'auto') as Settings['content']['backgroundSource'];
+  let bgLocalDir = s.content.backgroundLocalDir;
+  let pexelsKey = sec.pexelsKey;
+  let unsplashKey = sec.unsplashKey;
+  if (bgSource === 'local') {
+    bgLocalDir = await ask('Folder of your own portrait images', bgLocalDir);
+  } else {
+    pexelsKey = await askSecret('Pexels API key', sec.pexelsKey);
+    unsplashKey = await askSecret('Unsplash Access Key', sec.unsplashKey);
+  }
 
   // ── Storage ──────────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Object storage (public URL the publisher fetches the video from)'));
@@ -74,9 +85,13 @@ export async function runWizard(): Promise<void> {
   const translationEdition = await ask('Translation edition (e.g. en.sahih, fr.hamidullah, "" for none)', s.content.translationEdition);
   const randomMinAyahs = Number(await ask('Min ayahs per reel', String(s.content.randomMinAyahs)));
   const randomMaxAyahs = Number(await ask('Max ayahs per reel', String(s.content.randomMaxAyahs)));
+  const basmalaAlways = await yesNo('Add Bismillah before EVERY passage? (passages starting at ayah 1 always get it)', s.content.basmala === 'always');
+  const basmala = (basmalaAlways ? 'always' : 'off') as Settings['content']['basmala'];
 
   // ── Branding ─────────────────────────────────────────────────────────────
   console.log(C.b('\n▸ Branding'));
+  const tplRaw = (await ask('Template: classic / glass / noor', s.branding.template)).toLowerCase();
+  const template = (['classic', 'glass', 'noor'].includes(tplRaw) ? tplRaw : 'classic') as Settings['branding']['template'];
   const karaokeEnabled = await yesNo('Karaoke word-fill?', s.branding.karaokeEnabled);
   const textFillColor = await ask('Filled text color (hex)', s.branding.textFillColor || '#ffffff');
   const watermarkEnabled = await yesNo('Show corner logo watermark? (put a PNG at assets/logo.png)', s.branding.watermarkEnabled);
@@ -88,6 +103,8 @@ export async function runWizard(): Promise<void> {
   if (pw && pw !== 'keep current') panelPasswordHash = hashPassword(pw);
   const triggerToken = sec.triggerToken || randomBytes(16).toString('hex');
 
+  // ── Finish ───────────────────────────────────────────────────────────────
+  const startNow = await yesNo('Start the control panel now?', true);
   rl.close();
 
   // ── Persist ──────────────────────────────────────────────────────────────
@@ -97,15 +114,32 @@ export async function runWizard(): Promise<void> {
   });
   updateSettings({
     schedule: { tz, times, enabled: true },
-    content: { translationEdition, randomMinAyahs, randomMaxAyahs },
-    branding: { karaokeEnabled, textFillColor, watermarkEnabled },
+    content: { translationEdition, randomMinAyahs, randomMaxAyahs, backgroundSource: bgSource, backgroundLocalDir: bgLocalDir, basmala },
+    branding: { template, karaokeEnabled, textFillColor, watermarkEnabled },
     publish: { channels: { tiktok, instagram, facebook, youtube } },
   });
   markSetupComplete();
-
-  const port = Number(process.env.PORT ?? '3000');
-  console.log(`\n${C.g('✓ Saved.')} Config written to the store.`);
-  console.log(`  ${C.dim('Start it with:')} ${C.cyan('tabligh serve')}`);
-  console.log(`  ${C.dim('Control panel:')} ${C.cyan(`http://localhost:${port}/`)} ${C.dim('(login with your panel password)')}\n`);
   loadStore(); // ensure persisted
+
+  const port = Number(process.env.PORT ?? '1998');
+  const url = `http://localhost:${port}/`;
+  const line = '─'.repeat(url.length + 18);
+  console.log(`\n  ${C.g('┌' + line + '┐')}`);
+  console.log(`  ${C.g('│')}  ${C.b('✓ Setup complete')}${' '.repeat(line.length - 15)}${C.g('│')}`);
+  console.log(`  ${C.g('│')}  ${C.dim('Control panel:')}  ${C.cyan(url)}   ${C.g('│')}`);
+  console.log(`  ${C.g('└' + line + '┘')}`);
+  console.log(`  ${C.dim('Log in with your panel password. Manage everything anytime with')} ${C.cyan('tabligh')}${C.dim('.')}\n`);
+
+  if (startNow) {
+    console.log(`  ${C.dim('Starting the panel…')}`);
+    const st = await startPanel();
+    if (st.running) {
+      console.log(`  ${C.g('●')} ${C.dim('Panel is up at')} ${C.cyan(url)}`);
+      openBrowser(url);
+    } else {
+      console.log(`  ${C.y('!')} ${C.dim('Could not confirm the panel started — run')} ${C.cyan('tabligh serve')} ${C.dim('manually.')}`);
+    }
+  } else {
+    console.log(`  ${C.dim('Start it later with')} ${C.cyan('tabligh serve')} ${C.dim('or the')} ${C.cyan('tabligh')} ${C.dim('menu.')}`);
+  }
 }

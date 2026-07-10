@@ -34,16 +34,21 @@ export async function pickRandomJob(overrides: Partial<Job> = {}): Promise<Job> 
   }
 
   const reciter = overrides.reciter ?? pick(RECITERS).id;
+  const c = settings().content;
 
   const job = JobSchema.parse({
     surah,
     ayahFrom,
     ayahTo,
     reciter,
-    translationEdition: overrides.translationEdition ?? 'en.sahih',
+    translationEdition: overrides.translationEdition ?? c.translationEdition ?? 'en.sahih',
     watermarkHandle: overrides.watermarkHandle ?? '',
     publish: overrides.publish ?? false,
-    background: overrides.background,
+    background: overrides.background ?? {
+      source: c.backgroundSource,
+      keywords: c.backgroundKeywords,
+      localDir: c.backgroundLocalDir,
+    },
   });
 
   log.step(`Random pick → ${englishName} ${surah}:${ayahFrom}-${ayahTo} · ${reciter}`);

@@ -19,11 +19,23 @@ Pick nothing. A scheduler chooses a random surah + passage, pulls the exact reci
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/shot1.png" width="250" alt="Ayah with karaoke highlight"/></td>
-    <td><img src="docs/screenshots/shot2.png" width="250" alt="Multi-line ayah (Ayat al-Kursi)"/></td>
-    <td><img src="docs/screenshots/shot3.png" width="250" alt="Salawat outro"/></td>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Classic template — photo + karaoke"/></td>
+    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Glassmorphism template — frosted card + waveform"/></td>
+    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Noor template — golden Divine Light"/></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>photo + scrim · gold karaoke<br/><i>Al-Husary</i></sub></td>
+    <td align="center"><sub>one frosted card · live waveform<br/><i>Al-Tunaiji · with basmala</i></sub></td>
+    <td align="center"><sub>golden halo · gilded numerals<br/><i>Al-Minshawi · with basmala</i></sub></td>
   </tr>
 </table>
+
+<sub>Three built-in templates — switch with <code>TEMPLATE</code> or in the panel/menu. Every reel varies its background, and <code>glass</code> gets a unique waveform per video.</sub>
 
 </div>
 
@@ -32,11 +44,14 @@ Pick nothing. A scheduler chooses a random surah + passage, pulls the exact reci
 ## ✨ Features
 
 - 🎬 **Cinematic 1080×1920 reels** — full-bleed stock photo background (Pexels/Unsplash) with a strong legibility overlay, subtle drifting particles, and a slow Ken-Burns drift.
+- 🎨 **Three visual templates** — **classic** (photo + scrim), **glass** (one persistent frosted glassmorphism card with a live audio waveform), and **noor** (warm "Divine Light" — golden halo + gilded numerals). Set `TEMPLATE` or switch it in the panel/menu.
+- 🕋 **Bismillah intro** — a passage that starts at ayah 1 always opens with the reciter's own Bismillah (recited, in their voice); optionally prepend it before *every* passage (`BASMALA=always`). At-Tawbah and Al-Fatiha are handled correctly.
 - 🎤 **Karaoke word-fill** — each word brightens in sync with the recitation (right→left), so viewers follow along.
 - 🖋️ **Authentic Arabic typography** — full Uthmani text with correct *shakl* in the clean modern **Mada** face; headers in **Aref Ruqaa** calligraphy.
 - 🎯 **Exact sync, zero AI** — audio comes from [everyayah.com](https://everyayah.com) as per-ayah files, so each ayah's timing is exact and free (no transcription).
 - 🔀 **Auto content selection** — random surah + a random consecutive passage (configurable length); short surahs render in full.
-- 🌇 **Safe, tasteful backgrounds** — a curated 50-keyword pool (mosques, nature, sea, sky…) plus a filter that drops any photo containing people or anything unsuitable.
+- 🌇 **Safe, tasteful backgrounds** — a curated 50-keyword pool (mosques, nature, sea, sky…) plus a filter that drops any photo containing people or anything unsuitable. Pick your source: **Pexels, Unsplash, or your own local image folder**.
+- 🖥️ **Interactive command center** — run `tabligh` (no arguments) for a stunning terminal UI to generate reels, start/stop the panel, manage the queue, browse history, edit settings, and run a health check. Localized EN/AR/FR.
 - 🎞️ **Signature outro** — the passage fades out and a ṣalawāt (with your logo) glides up over the same scene, then the whole video fades to black.
 - 📤 **Multi-platform publishing** — TikTok, Instagram Reels, Facebook Reels and YouTube Shorts via [Buffer](https://buffer.com), toggled per platform by env.
 - 🎛️ **Self-hosted control panel** — a password-protected web UI to manage every setting, generate/preview/post a reel, queue passages, and browse history + analytics — all live, no redeploy. Localized (EN/AR/FR, full RTL).
@@ -102,6 +117,10 @@ Everything is driven by environment variables (`.env`). All are optional except 
 
 | Variable | Purpose | Default |
 |---|---|---|
+| `TEMPLATE` | Reel visual style: `classic` / `glass` / `noor` | `classic` |
+| `BASMALA` | Bismillah intro: `off` (only at ayah 1) / `always` (every passage) | `off` |
+| `BACKGROUND_SOURCE` | `auto` / `pexels` / `unsplash` / `local` | `auto` |
+| `BACKGROUND_LOCAL_DIR` | Folder of your own portrait images (when source = `local`) | _(empty)_ |
 | `PEXELS_API_KEY` / `UNSPLASH_ACCESS_KEY` | Stock photo backgrounds | _(unset → gradient fallback)_ |
 | `BUFFER_ACCESS_TOKEN` | Buffer API token for publishing | _(unset → no publishing)_ |
 | `BUFFER_TIKTOK_CHANNEL_IDS` | Comma-separated TikTok channel ids | _(empty)_ |
@@ -118,21 +137,41 @@ Everything is driven by environment variables (`.env`). All are optional except 
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Passage length for random mode | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Cap recitation length (excl. outro); trims trailing ayahs to fit (overrides min) | `0` _(no limit)_ |
 | `RETENTION_DAYS` / `MINIO_RETENTION_HOURS` | Cleanup windows | `7` days / `24` h |
-| `PORT` / `TRIGGER_TOKEN` | HTTP server + secret for the trigger endpoint | `3000` / _(unset → disabled)_ |
+| `PORT` / `TRIGGER_TOKEN` | HTTP server + secret for the trigger endpoint | `1998` / _(unset → disabled)_ |
+| `PANEL_ENABLED` | Serve the control panel (`false` = headless, scheduler only) | `true` |
+| `UI_LANG` | Interactive terminal-menu language (`en` / `ar` / `fr`) | `en` |
 
-See [`.env.example`](.env.example) for the full annotated list.
+See [`.env.example`](.env.example) for the full annotated list. **These values seed the store on first run only** — after that, manage settings live in the panel or the `tabligh` menu.
 
-**Reciters:** `husary`, `minshawy`, `abdulbasit`, `hudhaify`, `ayyoub`, `shuraym`, `husary-muallim` — or any raw [everyayah](https://everyayah.com) folder. See [`src/quran/reciters.ts`](src/quran/reciters.ts).
+**Reciters:** `husary`, `minshawy`, `abdulbasit`, `hudhaify`, `ayyoub`, `shuraym`, `husary-muallim`, `tunaiji` — or any raw [everyayah](https://everyayah.com) folder. See [`src/quran/reciters.ts`](src/quran/reciters.ts).
 
 **Translations:** any [alquran.cloud](https://alquran.cloud) edition id, e.g. `en.sahih`, `fr.hamidullah`, or `""` for Arabic only.
 
 ---
 
-## 🎛️ Control panel & CLI
+## 🖥️ Interactive command center
 
-Open the app root (`http://localhost:3000`) for a password-protected panel:
+Run **`tabligh`** with no arguments in a terminal to open the interactive menu — a self-contained control center for everything:
 
-- **First run** shows a setup screen to create your password (or run `tabligh init` for a terminal wizard).
+```
+tabligh                 # opens the menu (in a TTY)
+```
+
+- **Generate a reel** — random or pick a passage; renders locally (with live progress), then offers to open the video or publish it.
+- **Publish now** — generate + publish in one step.
+- **Control panel** — **Start / Stop / Restart** the web panel as a background service, **open** it in your browser, or **tail its logs** — no separate process to babysit.
+- **Queue** — add/remove passages the scheduler plays before random picks.
+- **History & analytics** — totals, by-platform breakdown, recent posts.
+- **Settings** — language, background source (incl. local folder), scheduler on/off, schedule, content, channels, and API keys — all applied live.
+- **Doctor** — one-glance health check (ffmpeg, Chrome, keys, storage, disk).
+
+Localized in **English / العربية / Français** (set `UI_LANG` or switch it in Settings). Non-interactive contexts (pipes, Docker, CI) print the classic help instead, so scripting is unaffected. There's also `tabligh menu` (force it) and `tabligh doctor` (run just the health check).
+
+## 🎛️ Web control panel & CLI
+
+Open the app root (`http://localhost:1998`) for a password-protected panel:
+
+- **First run** shows a setup screen to create your password (or run `tabligh init` for a terminal wizard — it now ends by showing your dashboard URL and offering to start the panel).
 - **Dashboard** — status, one-click *Generate now* / *+ publish*, latest preview.
 - **Generate** — pick a passage or go random, preview before it posts.
 - **Settings** — schedule (timezone + time picker), content (translation, ayah count, **max length**), branding (karaoke, fill color, particles, animated background, outro promo), platform channel ids, API keys & storage — applied **live**.
@@ -144,6 +183,24 @@ Login is rate-limited (5 tries → 15-min lockout). Reset the password from the 
 `tabligh set-password <new>` (e.g. `docker exec <container> tabligh set-password …`).
 
 Settings live in the store and persist on the `/app/data` volume; `.env` only seeds them on first run.
+
+### 🌐 Accessing the panel
+
+The app has no domain of its own — it just listens on a port (**`1998`** by default, override with `PORT`) on all interfaces. What URL you open depends on where it runs:
+
+| Where it runs | URL you open | HTTPS? |
+|---|---|---|
+| Your own computer (`npm` / local) | `http://localhost:1998` | — (local, fine) |
+| Cloud VPS, raw port exposed | `http://<your-server-ip>:1998` | ❌ **no** |
+| VPS behind a reverse proxy | `https://yourdomain.com` | ✅ proxy provides it |
+
+- **Locally**, the setup wizard prints the exact link on start (`http://localhost:1998`).
+- **On a VPS**, reaching `http://<server-ip>:1998` also requires your firewall / security group to allow inbound `1998`.
+- **⚠️ Don't leave the raw port exposed to the internet.** The panel serves plain HTTP, so your login password would travel unencrypted. Put it behind a reverse proxy that terminates TLS:
+  - **[Coolify](https://coolify.io)** (recommended) — set a domain on the app and point it at port `1998`; Coolify's Traefik handles routing **and** a Let's Encrypt certificate automatically.
+  - **Nginx / Caddy** — `proxy_pass http://127.0.0.1:1998` behind your domain + cert.
+
+The app never needs to know its public domain; the proxy owns the domain and HTTPS and forwards to `1998` internally.
 
 ---
 
@@ -166,7 +223,7 @@ One command — persistence included, nothing to set up:
 
 ```bash
 cp .env.example .env      # fill in your keys (optional — you can also do it in the panel)
-docker compose up -d      # scheduler + control panel, on http://localhost:3000
+docker compose up -d      # scheduler + control panel, on http://localhost:1998
 ```
 
 That's it. On first boot the app **creates its own config store** at `data/store.json`
@@ -180,6 +237,10 @@ password, queue and history **persist across restarts and rebuilds** automatical
   no redeploy.
 - an **internal scheduler** that renders + publishes at every `PUBLISH_TIMES` in your `TZ`;
 - `GET /health` and a token-secured `GET /trigger?key=<TRIGGER_TOKEN>` for scripting.
+
+**Headless mode:** run `tabligh serve --no-panel` (or set `PANEL_ENABLED=false`) to keep the
+scheduler posting while exposing **no HTTP surface at all** — ideal if you only manage the app
+from the terminal (`tabligh` menu) and don't want a web panel to secure.
 
 **Config lives in the store after first boot** (so the panel can edit it live). `.env` only
 *seeds* it once — to change things later, use the panel (or `tabligh set-password` to reset

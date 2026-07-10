@@ -9,7 +9,21 @@ import { serve } from './serve.js';
 import { runWizard } from './wizard.js';
 import { hashPassword } from './auth.js';
 import { updateSecrets, markSetupComplete } from './store/store.js';
+import { runDoctor } from './doctor.js';
 import { log } from './util/log.js';
+
+/** ANSI helpers for the plain-text `doctor` output. */
+const paint = (c: number, s: string) => `\x1b[${c}m${s}\x1b[0m`;
+async function printDoctor(): Promise<void> {
+  const checks = await runDoctor();
+  console.log(paint(1, '\nTabligh — health check\n'));
+  for (const c of checks) {
+    const [col, icon] = c.status === 'pass' ? [32, '✓'] : c.status === 'warn' ? [33, '!'] : [31, '✗'];
+    console.log(`  ${paint(col, icon)} ${c.name.padEnd(26)} ${paint(90, c.detail)}`);
+  }
+  const bad = checks.filter((c) => c.status === 'fail').length;
+  console.log(bad ? paint(31, `\n${bad} check(s) failed.\n`) : paint(32, '\nAll good.\n'));
+}
 
 /** Tiny flag parser: --key value / --flag (boolean). */
 function parseFlags(argv: string[]): Record<string, string | boolean> {
@@ -68,7 +82,24 @@ async function main() {
   const flags = parseFlags(rest);
   const runTag = (flags.tag as string) ?? 'dev';
 
+  // No subcommand in an interactive terminal → open the command center.
+  // Non-TTY (pipes, Docker, CI) falls through to the help text below.
+  if (cmd === undefined && process.stdout.isTTY && process.stdin.isTTY) {
+    const { launchTui } = await import('./tui/index.js');
+    await launchTui();
+    return;
+  }
+
   switch (cmd) {
+    case 'menu': {
+      const { launchTui } = await import('./tui/index.js');
+      await launchTui();
+      break;
+    }
+    case 'doctor': {
+      await printDoctor();
+      break;
+    }
     case 'init': {
       // Interactive setup wizard → writes the persisted store.
       await runWizard();
@@ -102,7 +133,8 @@ async function main() {
     }
     case 'serve': {
       // Always-on: internally schedule `auto` at PUBLISH_TIMES (the container CMD).
-      await serve();
+      // `--no-panel` (or PANEL_ENABLED=false) runs the scheduler headless.
+      await serve({ panel: flags['no-panel'] !== true });
       break;
     }
     case 'channels': {
@@ -127,23 +159,30 @@ async function main() {
       break;
     }
     default:
-      console.log(`tabligh
+      console.log(`tabligh — run with no arguments in a terminal to open the interactive menu.
 
 Usage:
+  tabligh                      # interactive command center (TTY only)
+  tabligh menu                 # force the interactive menu
   tabligh fetch  --surah 55 --from 1 --to 5 [--reciter husary] [--translation en.sahih]
   tabligh render --surah 112 --from 1 --to 4 [--reciter husary] [--watermark @handle] [--publish]
   tabligh random [--publish] [--mode addToQueue|shareNow|customScheduled] [--due <ISO>]
+  tabligh serve  [--no-panel]  # always-on scheduler (+ control panel unless --no-panel)
   tabligh auto                 # cron: prune → random → publish
   tabligh prune                # remove stale MinIO objects + old work dirs
+  tabligh doctor               # environment & config health check
   tabligh channels             # list Buffer channels (find your TikTok id)
 
 Commands:
+  menu      Open the interactive command center (generate, panel control, settings…)
   init      Interactive setup wizard (keys, storage, schedule, branding, password)
   fetch     Fetch text + per-ayah audio, compute exact timing, write ir.json
   render    Also render the animated reel.mp4; add --publish to post it
   random    Pick a random surah + consecutive ayahs (full surah if ≤ ${'FULL_SURAH_MAX_AYAHS'})
+  serve     Always-on scheduler + control panel; --no-panel for headless
   auto      One-shot cron job: prune, then render + publish a random reel
   prune     Delete stale assets (MinIO objects + local work dirs)
+  doctor    Check ffmpeg, Chrome, API keys, storage, disk
   channels  List Buffer channels for setup
   set-password [pw]  Reset the control-panel password
 `);
