@@ -153,6 +153,10 @@ See [`.env.example`](.env.example) for the full annotated list. **These values s
 
 Run **`tabligh`** with no arguments in a terminal to open the interactive menu — a self-contained control center for everything:
 
+<div align="center">
+  <img src="docs/screenshots/cli-command-center.jpg" width="720" alt="Tabligh interactive command center — master–detail TUI with a gradient banner, live status, menu and working pane"/>
+</div>
+
 ```
 tabligh                 # opens the menu (in a TTY)
 ```
