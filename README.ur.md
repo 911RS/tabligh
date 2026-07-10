@@ -134,7 +134,6 @@ npm start
 | `KARAOKE_ENABLED` | تلاوت کے ساتھ ہم آہنگ لفظ بہ لفظ بھرائی | `true` |
 | `TEXT_FILL_COLOR` | تلاوت شدہ (بھرے ہوئے) متن کا رنگ | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | کونے کا لوگو واٹر مارک (`assets/logo.png`) | `true` / _(خالی)_ |
-| `OUTRO_TEXT` | اختتامی الوداعی متن | ایک صلوٰۃ |
 | `FULL_SURAH_MAX_AYAHS` | اس سے چھوٹی سورتیں مکمل رینڈر ہوتی ہیں | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | بے ترتیب موڈ کے لیے اقتباس کی لمبائی | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | تلاوت کی لمبائی کی حد (اختتام کے بغیر)؛ فٹ ہونے کے لیے آخری آیات کو کاٹتا ہے (min کو زیر کرتا ہے) | `0` _(کوئی حد نہیں)_ |

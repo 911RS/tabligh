@@ -108,11 +108,6 @@ export const env = {
   // Show the top-right corner watermark (logo/handle). The outro sign-off is
   // always shown regardless of this.
   watermarkEnabled: (process.env.WATERMARK_ENABLED ?? 'true') === 'true',
-  // Outro sign-off text (ṣalawāt), shown centered on the fade-to-black — under
-  // the logo when a logo is present, otherwise on its own.
-  outroText:
-    process.env.OUTRO_TEXT ??
-    'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين',
   // Keep MinIO objects ~24h after publish so Buffer can ingest, then `prune`
   // removes them. Local assets are always deleted immediately after publish.
   // Flip to 'true' only if you want the (risky) instant MinIO delete.

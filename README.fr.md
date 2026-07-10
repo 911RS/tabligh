@@ -134,7 +134,6 @@ Tout est piloté par des variables d'environnement (`.env`). Toutes sont faculta
 | `KARAOKE_ENABLED` | Remplissage mot à mot synchronisé avec la récitation | `true` |
 | `TEXT_FILL_COLOR` | Couleur du texte récité (rempli) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Filigrane logo en coin (`assets/logo.png`) | `true` / _(vide)_ |
-| `OUTRO_TEXT` | Texte de conclusion de l'outro | une ṣalawāt |
 | `FULL_SURAH_MAX_AYAHS` | Les sourates aussi courtes sont rendues en entier | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Longueur du passage en mode aléatoire | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Plafonne la durée de récitation (hors outro) ; coupe les ayahs finaux pour tenir (prioritaire sur le minimum) | `0` _(sans limite)_ |

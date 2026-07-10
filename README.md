@@ -134,7 +134,6 @@ Everything is driven by environment variables (`.env`). All are optional except 
 | `KARAOKE_ENABLED` | Word-by-word fill synced to recitation | `true` |
 | `TEXT_FILL_COLOR` | Color of the recited (filled) text | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Corner logo watermark (`assets/logo.png`) | `true` / _(empty)_ |
-| `OUTRO_TEXT` | Outro sign-off text | a ṣalawāt |
 | `FULL_SURAH_MAX_AYAHS` | Surahs this short render in full | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Passage length for random mode | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Cap recitation length (excl. outro); trims trailing ayahs to fit (overrides min) | `0` _(no limit)_ |

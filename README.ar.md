@@ -134,7 +134,6 @@ npm start
 | `KARAOKE_ENABLED` | تعبئة كلمة بكلمة متزامنة مع التلاوة | `true` |
 | `TEXT_FILL_COLOR` | لون النص المُتلوّ (المُعبَّأ) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | علامة مائية للشعار في الزاوية (`assets/logo.png`) | `true` / _(فارغ)_ |
-| `OUTRO_TEXT` | نص توقيع الخاتمة | صلاة |
 | `FULL_SURAH_MAX_AYAHS` | السور بهذا القِصر تُصيَّر كاملة | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | طول المقطع في الوضع العشوائي | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | حد أقصى لطول التلاوة (باستثناء الخاتمة)؛ يقتطع الآيات الأخيرة لتلائم الحد (يتجاوز الحد الأدنى) | `0` _(بلا حد)_ |

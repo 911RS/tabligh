@@ -134,7 +134,6 @@ Segala-galanya dipacu oleh pembolehubah persekitaran (`.env`). Semuanya adalah p
 | `KARAOKE_ENABLED` | Isian perkataan demi perkataan diselaraskan dengan bacaan | `true` |
 | `TEXT_FILL_COLOR` | Warna teks yang dibaca (diisi) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Tera air logo di penjuru (`assets/logo.png`) | `true` / _(kosong)_ |
-| `OUTRO_TEXT` | Teks penutup outro | satu ṣalawāt |
 | `FULL_SURAH_MAX_AYAHS` | Surah sependek ini dipaparkan sepenuhnya | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Panjang petikan untuk mod rawak | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Had panjang bacaan (tidak termasuk outro); memangkas ayat penghujung untuk muat (mengatasi min) | `0` _(tiada had)_ |

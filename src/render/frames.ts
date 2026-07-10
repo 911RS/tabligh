@@ -105,7 +105,6 @@ export async function renderFrames(
     logoDataUri,
     handle: opts.handle,
     showWatermark: settings().branding.watermarkEnabled,
-    outroText: settings().branding.outroText,
     fillColor: settings().branding.textFillColor,
     karaoke: settings().branding.karaokeEnabled,
     particles: settings().branding.particlesEnabled,

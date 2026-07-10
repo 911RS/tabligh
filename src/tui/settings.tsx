@@ -18,7 +18,7 @@ interface Draft {
   randomMinAyahs: string; randomMaxAyahs: string; maxDurationSeconds: string;
   tiktok: string; instagram: string; facebook: string; youtube: string;
   pexelsKey: string; unsplashKey: string; bufferToken: string;
-  outroText: string; textFillColor: string; watermarkHandle: string;
+  textFillColor: string; watermarkHandle: string;
   karaokeEnabled: boolean; watermarkEnabled: boolean; particlesEnabled: boolean; bgAnimationEnabled: boolean;
 }
 function draftFromStore(): Draft {
@@ -32,14 +32,14 @@ function draftFromStore(): Draft {
     randomMaxAyahs: String(s.content.randomMaxAyahs), maxDurationSeconds: String(s.content.maxDurationSeconds),
     tiktok: ch.tiktok.join(','), instagram: ch.instagram.join(','), facebook: ch.facebook.join(','), youtube: ch.youtube.join(','),
     pexelsKey: '', unsplashKey: '', bufferToken: '',
-    outroText: b.outroText, textFillColor: b.textFillColor, watermarkHandle: b.watermarkHandle,
+    textFillColor: b.textFillColor, watermarkHandle: b.watermarkHandle,
     karaokeEnabled: b.karaokeEnabled, watermarkEnabled: b.watermarkEnabled, particlesEnabled: b.particlesEnabled, bgAnimationEnabled: b.bgAnimationEnabled,
   };
 }
 
 type StrKey = 'backgroundLocalDir' | 'tz' | 'times' | 'translationEdition' | 'randomMinAyahs' | 'randomMaxAyahs'
   | 'maxDurationSeconds' | 'tiktok' | 'instagram' | 'facebook' | 'youtube' | 'pexelsKey' | 'unsplashKey' | 'bufferToken'
-  | 'outroText' | 'textFillColor' | 'watermarkHandle';
+  | 'textFillColor' | 'watermarkHandle';
 interface Field { key: StrKey; label: string; type: 'text' | 'number' | 'password' }
 const FIELDS: Field[] = [
   { key: 'tz', label: 'Timezone', type: 'text' },
@@ -48,7 +48,6 @@ const FIELDS: Field[] = [
   { key: 'randomMinAyahs', label: 'Min ayahs', type: 'number' },
   { key: 'randomMaxAyahs', label: 'Max ayahs', type: 'number' },
   { key: 'maxDurationSeconds', label: 'Max duration (s)', type: 'number' },
-  { key: 'outroText', label: 'Outro text (ṣalawāt)', type: 'text' },
   { key: 'textFillColor', label: 'Fill color (hex)', type: 'text' },
   { key: 'watermarkHandle', label: 'Watermark handle', type: 'text' },
   { key: 'tiktok', label: 'TikTok channels', type: 'text' },
@@ -119,7 +118,6 @@ export function SettingsSection({
       ui: { lang: draft.lang },
       branding: {
         template: draft.template,
-        outroText: draft.outroText,
         textFillColor: draft.textFillColor.trim() || '#ffffff',
         watermarkHandle: draft.watermarkHandle.trim(),
         karaokeEnabled: draft.karaokeEnabled,

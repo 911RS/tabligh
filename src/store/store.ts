@@ -51,7 +51,6 @@ export interface Settings {
     watermarkHandle: string;
     textFillColor: string;
     karaokeEnabled: boolean;
-    outroText: string;
     /** Drifting particle glints over the video. */
     particlesEnabled: boolean;
     /** Slow cinematic background zoom/breathing. */
@@ -144,7 +143,6 @@ function seedFromEnv(): StoreData {
         watermarkHandle: process.env.WATERMARK_HANDLE || '',
         textFillColor: env.textFillColor,
         karaokeEnabled: env.karaokeEnabled,
-        outroText: env.outroText,
         particlesEnabled: env.particlesEnabled,
         bgAnimationEnabled: env.bgAnimationEnabled,
         projectCreditEnabled: env.projectCreditEnabled,

@@ -134,7 +134,6 @@ Her şey ortam değişkenleri (`.env`) tarafından yönlendirilir. Bir özelliğ
 | `KARAOKE_ENABLED` | Okumayla senkron kelime kelime doldurma | `true` |
 | `TEXT_FILL_COLOR` | Okunan (doldurulan) metnin rengi | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Köşe logo filigranı (`assets/logo.png`) | `true` / _(boş)_ |
-| `OUTRO_TEXT` | Outro kapanış metni | bir salavat |
 | `FULL_SURAH_MAX_AYAHS` | Bu kadar kısa sureler tam olarak işlenir | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Rastgele mod için pasaj uzunluğu | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Okuma uzunluğunu sınırla (outro hariç); sığdırmak için sondaki ayetleri kırpar (min'i geçersiz kılar) | `0` _(sınır yok)_ |

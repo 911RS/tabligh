@@ -1,6 +1,10 @@
 import type { Background } from './background.js';
 import type { Template } from '../store/store.js';
 
+/** The outro sign-off — a ṣalawāt upon the Prophet ﷺ. Fixed by design; the
+ * project intentionally exposes no way for users to change or remove it. */
+const OUTRO_SALAWAT = 'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين';
+
 export interface KaraokeWord {
   t: string;
   /** absolute ms in the concatenated audio */
@@ -39,8 +43,6 @@ export interface SceneParams {
   handle?: string;
   /** Show the top-right corner watermark (outro sign-off is always shown). */
   showWatermark: boolean;
-  /** Outro sign-off text, used when there is no logo. */
-  outroText?: string;
   /** Color of already-recited (filled) karaoke text. */
   fillColor: string;
   /** Word-by-word karaoke fill (else the ayah shows fully filled). */
@@ -192,7 +194,7 @@ export function buildScene(p: SceneParams): string {
   const ghIcon = `<svg class="gh" viewBox="0 0 16 16" width="34" height="34" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>`;
   const endCardInner =
     (p.showWatermark && p.logoDataUri ? `<img class="end-logo eo" src="${p.logoDataUri}" alt=""/>` : '') +
-    (p.outroText ? `<div class="end-text eo" dir="rtl">${esc(p.outroText)}</div>` : '') +
+    `<div class="end-text eo" dir="rtl">${esc(OUTRO_SALAWAT)}</div>` +
     `<div class="end-foot${p.projectCredit ? '' : ' compact'}" dir="ltr">
        <div class="end-sep eo"></div>
        ${p.projectCredit ? `<div class="end-project eo">Check the <b>Tabligh</b> project</div>` : ''}

@@ -134,7 +134,6 @@ Todo se controla mediante variables de entorno (`.env`). Todas son opcionales sa
 | `KARAOKE_ENABLED` | Relleno palabra por palabra sincronizado con la recitación | `true` |
 | `TEXT_FILL_COLOR` | Color del texto recitado (rellenado) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Marca de agua con logotipo en la esquina (`assets/logo.png`) | `true` / _(vacío)_ |
-| `OUTRO_TEXT` | Texto de despedida del cierre | una ṣalawāt |
 | `FULL_SURAH_MAX_AYAHS` | Suras de esta longitud o menor se renderizan completas | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Longitud del pasaje para el modo aleatorio | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Limita la longitud de la recitación (sin contar el cierre); recorta las ayas finales para ajustarse (anula el mínimo) | `0` _(sin límite)_ |

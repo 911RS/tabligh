@@ -134,7 +134,6 @@ Semuanya digerakkan oleh variabel lingkungan (`.env`). Semuanya opsional kecuali
 | `KARAOKE_ENABLED` | Isian kata demi kata tersinkron dengan lantunan | `true` |
 | `TEXT_FILL_COLOR` | Warna teks yang dilantunkan (terisi) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | Watermark logo di sudut (`assets/logo.png`) | `true` / _(kosong)_ |
-| `OUTRO_TEXT` | Teks penutup outro | sebuah shalawat |
 | `FULL_SURAH_MAX_AYAHS` | Surah sependek ini dirender secara utuh | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | Panjang potongan untuk mode acak | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | Batasi panjang lantunan (di luar outro); memangkas ayat-ayat akhir agar pas (menimpa min) | `0` _(tanpa batas)_ |

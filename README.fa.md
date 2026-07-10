@@ -134,7 +134,6 @@ npm start
 | `KARAOKE_ENABLED` | پُرشدن کلمه‌به‌کلمه همگام با تلاوت | `true` |
 | `TEXT_FILL_COLOR` | رنگ متن تلاوت‌شده (پُرشده) | `#ffffff` |
 | `WATERMARK_ENABLED` / `WATERMARK_HANDLE` | واترمارک لوگو در گوشه (`assets/logo.png`) | `true` / _(خالی)_ |
-| `OUTRO_TEXT` | متن پایانی اوترو | یک صلوات |
 | `FULL_SURAH_MAX_AYAHS` | سوره‌هایی که این‌قدر کوتاه‌اند به‌طور کامل رندر می‌شوند | `7` |
 | `RANDOM_MIN_AYAHS` / `RANDOM_MAX_AYAHS` | طول بخش برای حالت تصادفی | `5` / `10` |
 | `MAX_VIDEO_SECONDS` | سقف طول تلاوت (بدون اوترو)؛ آیه‌های انتهایی را برای جا شدن کوتاه می‌کند (بر حداقل ارجحیت دارد) | `0` _(بدون محدودیت)_ |
