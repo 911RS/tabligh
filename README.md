@@ -219,6 +219,20 @@ Publishing goes through [Buffer](https://buffer.com), which fans out to every co
 
 Each platform gets the right format automatically (Reel / Short). The caption includes the surah, ayah range, reciter, photo credit, and hashtags.
 
+### Storage — you don't need to install MinIO
+
+Object storage is used **only for publishing**: the reel is uploaded to an S3 bucket so Buffer's servers can fetch it from a **public URL**. If you only render locally (no publishing), you need **no storage at all**.
+
+The `MINIO_*` settings are just **standard S3** credentials — any S3-compatible provider works, not only MinIO:
+
+| Provider | Install? | Notes |
+|---|---|---|
+| **Cloudflare R2** | ❌ | Free tier + public buckets — easiest |
+| **AWS S3 / Backblaze B2 / Wasabi / DO Spaces** | ❌ | Cloud bucket + access keys |
+| **Self-hosted MinIO** | ✅ | Only worth it on a server with a public domain |
+
+⚠️ **Local caveat:** Buffer fetches over the public internet, so the bucket's `MINIO_PUBLIC_URL` must be reachable from outside your machine. A MinIO on `localhost`/your LAN **won't** work (Buffer can't reach it) — use a cloud bucket, or host MinIO behind a public domain (e.g. on the same box as your panel). The app auto-creates the bucket and sets a public-read policy on first publish, and prunes old objects after `MINIO_RETENTION_HOURS`.
+
 ---
 
 ## 🐳 Deployment (always-on scheduler + control panel)

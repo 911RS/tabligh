@@ -18,11 +18,13 @@ interface Draft {
   randomMinAyahs: string; randomMaxAyahs: string; maxDurationSeconds: string;
   tiktok: string; instagram: string; facebook: string; youtube: string;
   pexelsKey: string; unsplashKey: string; bufferToken: string;
+  outroText: string; textFillColor: string; watermarkHandle: string;
+  karaokeEnabled: boolean; watermarkEnabled: boolean; particlesEnabled: boolean; bgAnimationEnabled: boolean;
 }
 function draftFromStore(): Draft {
-  const s = settings(); const ch = s.publish.channels;
+  const s = settings(); const ch = s.publish.channels; const b = s.branding;
   return {
-    lang: s.ui.lang, template: s.branding.template,
+    lang: s.ui.lang, template: b.template,
     backgroundSource: s.content.backgroundSource, backgroundLocalDir: s.content.backgroundLocalDir,
     basmala: s.content.basmala,
     schedulerEnabled: s.schedule.enabled, tz: s.schedule.tz, times: s.schedule.times.join(','),
@@ -30,11 +32,14 @@ function draftFromStore(): Draft {
     randomMaxAyahs: String(s.content.randomMaxAyahs), maxDurationSeconds: String(s.content.maxDurationSeconds),
     tiktok: ch.tiktok.join(','), instagram: ch.instagram.join(','), facebook: ch.facebook.join(','), youtube: ch.youtube.join(','),
     pexelsKey: '', unsplashKey: '', bufferToken: '',
+    outroText: b.outroText, textFillColor: b.textFillColor, watermarkHandle: b.watermarkHandle,
+    karaokeEnabled: b.karaokeEnabled, watermarkEnabled: b.watermarkEnabled, particlesEnabled: b.particlesEnabled, bgAnimationEnabled: b.bgAnimationEnabled,
   };
 }
 
 type StrKey = 'backgroundLocalDir' | 'tz' | 'times' | 'translationEdition' | 'randomMinAyahs' | 'randomMaxAyahs'
-  | 'maxDurationSeconds' | 'tiktok' | 'instagram' | 'facebook' | 'youtube' | 'pexelsKey' | 'unsplashKey' | 'bufferToken';
+  | 'maxDurationSeconds' | 'tiktok' | 'instagram' | 'facebook' | 'youtube' | 'pexelsKey' | 'unsplashKey' | 'bufferToken'
+  | 'outroText' | 'textFillColor' | 'watermarkHandle';
 interface Field { key: StrKey; label: string; type: 'text' | 'number' | 'password' }
 const FIELDS: Field[] = [
   { key: 'tz', label: 'Timezone', type: 'text' },
@@ -43,6 +48,9 @@ const FIELDS: Field[] = [
   { key: 'randomMinAyahs', label: 'Min ayahs', type: 'number' },
   { key: 'randomMaxAyahs', label: 'Max ayahs', type: 'number' },
   { key: 'maxDurationSeconds', label: 'Max duration (s)', type: 'number' },
+  { key: 'outroText', label: 'Outro text (ṣalawāt)', type: 'text' },
+  { key: 'textFillColor', label: 'Fill color (hex)', type: 'text' },
+  { key: 'watermarkHandle', label: 'Watermark handle', type: 'text' },
   { key: 'tiktok', label: 'TikTok channels', type: 'text' },
   { key: 'instagram', label: 'Instagram channels', type: 'text' },
   { key: 'facebook', label: 'Facebook channels', type: 'text' },
@@ -96,6 +104,10 @@ export function SettingsSection({
     ...(draft.backgroundSource === 'local' ? [{ key: 'backgroundLocalDir', label: 'Local folder', badge: draft.backgroundLocalDir || '(unset)' }] : []),
     { key: '@sched', label: t('setSchedule', lang), badge: draft.schedulerEnabled ? 'on' : 'off' },
     { key: '@basmala', label: 'Basmala intro', badge: draft.basmala === 'always' ? 'always' : 'ayah 1 only' },
+    { key: '@karaoke', label: 'Karaoke fill', badge: draft.karaokeEnabled ? 'on' : 'off' },
+    { key: '@watermark', label: 'Watermark logo', badge: draft.watermarkEnabled ? 'on' : 'off' },
+    { key: '@particles', label: 'Particles', badge: draft.particlesEnabled ? 'on' : 'off' },
+    { key: '@bganim', label: 'Animated background', badge: draft.bgAnimationEnabled ? 'on' : 'off' },
     ...FIELDS.map((f) => ({ key: f.key, label: f.label, badge: f.type === 'password' ? (draft[f.key] ? '(edited)' : '••••') : (String(draft[f.key]) || '(empty)') })),
     { key: '@save', label: dirty ? '● Save changes' : 'Save changes' },
     { key: '@discard', label: dirty ? 'Discard changes' : t('back', lang), danger: dirty },
@@ -105,7 +117,16 @@ export function SettingsSection({
   const save = () => {
     updateSettings({
       ui: { lang: draft.lang },
-      branding: { template: draft.template },
+      branding: {
+        template: draft.template,
+        outroText: draft.outroText,
+        textFillColor: draft.textFillColor.trim() || '#ffffff',
+        watermarkHandle: draft.watermarkHandle.trim(),
+        karaokeEnabled: draft.karaokeEnabled,
+        watermarkEnabled: draft.watermarkEnabled,
+        particlesEnabled: draft.particlesEnabled,
+        bgAnimationEnabled: draft.bgAnimationEnabled,
+      },
       schedule: { tz: draft.tz.trim() || settings().schedule.tz, times: splitCsv(draft.times), enabled: draft.schedulerEnabled },
       content: {
         translationEdition: draft.translationEdition.trim(),
@@ -133,6 +154,10 @@ export function SettingsSection({
     if (it.key === '@bg') return setEnumOpen('bg');
     if (it.key === '@sched') return setDraft({ ...draft, schedulerEnabled: !draft.schedulerEnabled });
     if (it.key === '@basmala') return setDraft({ ...draft, basmala: draft.basmala === 'always' ? 'off' : 'always' });
+    if (it.key === '@karaoke') return setDraft({ ...draft, karaokeEnabled: !draft.karaokeEnabled });
+    if (it.key === '@watermark') return setDraft({ ...draft, watermarkEnabled: !draft.watermarkEnabled });
+    if (it.key === '@particles') return setDraft({ ...draft, particlesEnabled: !draft.particlesEnabled });
+    if (it.key === '@bganim') return setDraft({ ...draft, bgAnimationEnabled: !draft.bgAnimationEnabled });
     if (it.key === '@save') return save();
     if (it.key === '@discard') { if (dirty) setDraft(baseline); else onBack(); return; }
     if (it.key === 'backgroundLocalDir') return setEdit({ key: 'backgroundLocalDir', label: t('askLocalDir', lang), type: 'text' });
