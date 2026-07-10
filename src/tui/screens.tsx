@@ -175,7 +175,9 @@ export function HistorySection({ lang, active, onBack }: SectionProps) {
         <Text color="magenta">{stats.total}</Text> {t('histTotal', lang)} · <Text color="green">{stats.published}</Text> {t('histPublished', lang)} · <Text color="red">{stats.failed}</Text> {t('histFailed', lang)} · <Text color="cyan">{stats.week}</Text> {t('histWeek', lang)}
       </Text>
       {byPlatform.length ? <Text color="gray">{t('histByPlatform', lang)}: {byPlatform.map(([k, v]) => `${k} ${v}`).join(' · ')}</Text> : null}
-      <Box marginTop={1}>{recent.length ? <NavList items={nav} index={Math.min(index, nav.length - 1)} setIndex={setIndex} isActive={active} onBack={onBack} onSelect={(it) => { if (it.key === '@back') onBack(); }} /> : <Text color="gray">{t('histNone', lang)}</Text>}</Box>
+      {recent.length === 0 ? <Text color="gray">{t('histNone', lang)}</Text> : null}
+      {/* Always render the list (it always has a Back item) so Esc/Back works even with 0 posts. */}
+      <Box marginTop={1}><NavList items={nav} index={Math.min(index, nav.length - 1)} setIndex={setIndex} isActive={active} onBack={onBack} onSelect={(it) => { if (it.key === '@back') onBack(); }} /></Box>
       {post ? <Text color="gray">{post.reciterName} · {post.ts.slice(0, 16).replace('T', ' ')}{post.platforms?.length ? ` · ${post.platforms.join(', ')}` : ''}</Text> : null}
     </Box>
   );
