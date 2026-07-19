@@ -19,24 +19,6 @@ _"আমার পক্ষ থেকে পৌঁছে দাও, একটি
 
 **▶ লাইভ দেখুন:** [@eQurany on TikTok](https://www.tiktok.com/@eQurany) — সেখানকার প্রতিটি ভিডিও এই প্রকল্পের দ্বারা স্বয়ংক্রিয়ভাবে তৈরি।
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Classic টেমপ্লেট — ছবি + ক্যারাওকে"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Glassmorphism টেমপ্লেট — ফ্রস্টেড কার্ড + ওয়েভফর্ম"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Noor টেমপ্লেট — সোনালি ঐশী আলো"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>ছবি + স্ক্রিম · সোনালি ক্যারাওকে<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>একটি ফ্রস্টেড কার্ড · লাইভ ওয়েভফর্ম<br/><i>Al-Tunaiji · বাসমালা সহ</i></sub></td>
-    <td align="center"><sub>সোনালি হ্যালো · সোনালি সংখ্যা<br/><i>Al-Minshawi · বাসমালা সহ</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ শব্দসহ চালান</b></sub>
 
 <table>

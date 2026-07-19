@@ -19,24 +19,6 @@ Hiçbir şey seçmeyin. Bir zamanlayıcı rastgele bir sure + pasaj seçer, tam 
 
 **▶ Canlı görün:** [@eQurany TikTok'ta](https://www.tiktok.com/@eQurany) — oradaki her video bu proje tarafından otomatik üretiliyor.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Classic şablon — fotoğraf + karaoke"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Glassmorphism şablon — buzlu kart + dalga formu"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Noor şablon — altın İlahi Nur"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>fotoğraf + karartma · altın karaoke<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>tek buzlu kart · canlı dalga formu<br/><i>Al-Tunaiji · besmele ile</i></sub></td>
-    <td align="center"><sub>altın hale · yaldızlı rakamlar<br/><i>Al-Minshawi · besmele ile</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ Sesli oynat</b></sub>
 
 <table>

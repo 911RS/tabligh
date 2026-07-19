@@ -19,24 +19,6 @@ _«از من برسانید، حتی یک آیه.»_ — پیامبر محمد �
 
 **▶ به‌صورت زنده ببینید:** [@eQurany در تیک‌تاک](https://www.tiktok.com/@eQurany) — هر ویدیوی آن‌جا به‌طور خودکار توسط این پروژه ساخته شده است.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="قالب classic — عکس + کاراوکه"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="قالب گلس‌مورفیسم — کارت مات + شکل موج"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="قالب noor — نور الهی طلایی"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>عکس + لایهٔ تیره · کاراوکهٔ طلایی<br/><i>الحصری</i></sub></td>
-    <td align="center"><sub>یک کارت مات · شکل موج زنده<br/><i>التنیجی · همراه با بسمله</i></sub></td>
-    <td align="center"><sub>هالهٔ طلایی · اعداد زرنگار<br/><i>المنشاوی · همراه با بسمله</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ با صدا پخش کنید</b></sub>
 
 <table>

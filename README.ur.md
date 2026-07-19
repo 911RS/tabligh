@@ -19,24 +19,6 @@ _"میری طرف سے پہنچا دو، خواہ ایک ہی آیت ہو۔"_ �
 
 **▶ اسے چلتے ہوئے دیکھیں:** [@eQurany on TikTok](https://www.tiktok.com/@eQurany) — وہاں کی ہر ویڈیو اس پروجیکٹ کے ذریعے خودکار طور پر بنائی گئی ہے۔
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="کلاسک ٹیمپلیٹ — تصویر + کیراوکی"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="گلاس مورفزم ٹیمپلیٹ — دھندلا کارڈ + ویوفارم"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="نور ٹیمپلیٹ — سنہری نورِ الٰہی"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>تصویر + اسکرم · سنہری کیراوکی<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>ایک دھندلا کارڈ · براہِ راست ویوفارم<br/><i>Al-Tunaiji · بسملہ کے ساتھ</i></sub></td>
-    <td align="center"><sub>سنہری ہالہ · مطلا اعداد<br/><i>Al-Minshawi · بسملہ کے ساتھ</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ آواز کے ساتھ چلائیں</b></sub>
 
 <table>

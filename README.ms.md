@@ -19,24 +19,6 @@ Tidak perlu pilih apa-apa. Penjadual memilih surah + petikan secara rawak, menga
 
 **▶ Lihat secara langsung:** [@eQurany di TikTok](https://www.tiktok.com/@eQurany) — setiap video di sana dihasilkan secara automatik oleh projek ini.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Templat Classic — foto + karaoke"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Templat Glassmorphism — kad berkabus + bentuk gelombang"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Templat Noor — Cahaya Ilahi keemasan"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>foto + scrim · karaoke emas<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>satu kad berkabus · bentuk gelombang langsung<br/><i>Al-Tunaiji · dengan basmala</i></sub></td>
-    <td align="center"><sub>lingkaran cahaya keemasan · angka bersalut emas<br/><i>Al-Minshawi · dengan basmala</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ Main dengan bunyi</b></sub>
 
 <table>

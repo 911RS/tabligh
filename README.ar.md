@@ -19,24 +19,6 @@ _"بلّغوا عني ولو آية."_ — النبي محمد ﷺ (البخار
 
 **▶ شاهده مباشرة:** [@eQurany على تيك توك](https://www.tiktok.com/@eQurany) — كل فيديو هناك مولَّد تلقائياً بواسطة هذا المشروع.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="قالب classic — صورة + كاريوكي"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="قالب glassmorphism — بطاقة زجاجية مصنفرة + موجة صوتية"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="قالب noor — النور الإلهي الذهبي"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>صورة + طبقة تعتيم · كاريوكي ذهبي<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>بطاقة زجاجية مصنفرة واحدة · موجة صوتية حية<br/><i>Al-Tunaiji · مع البسملة</i></sub></td>
-    <td align="center"><sub>هالة ذهبية · أرقام مذهّبة<br/><i>Al-Minshawi · مع البسملة</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ شغّلها بالصوت</b></sub>
 
 <table>

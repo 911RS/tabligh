@@ -19,24 +19,6 @@ No elijas nada. Un programador escoge una sura y un pasaje al azar, obtiene la r
 
 **▶ Míralo en vivo:** [@eQurany en TikTok](https://www.tiktok.com/@eQurany) — cada vídeo allí es generado automáticamente por este proyecto.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Plantilla Classic — foto + karaoke"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Plantilla Glassmorphism — tarjeta esmerilada + forma de onda"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Plantilla Noor — Luz Divina dorada"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>foto + velo · karaoke dorado<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>una tarjeta esmerilada · forma de onda en vivo<br/><i>Al-Tunaiji · con basmala</i></sub></td>
-    <td align="center"><sub>halo dorado · numerales dorados<br/><i>Al-Minshawi · con basmala</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ Reproducir con sonido</b></sub>
 
 <table>

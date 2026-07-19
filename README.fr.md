@@ -19,24 +19,6 @@ Ne choisissez rien. Un planificateur sélectionne une sourate + un passage au ha
 
 **▶ Voyez-le en direct :** [@eQurany sur TikTok](https://www.tiktok.com/@eQurany) — chaque vidéo là-bas est générée automatiquement par ce projet.
 
-<table>
-  <tr>
-    <td align="center"><b>classic</b></td>
-    <td align="center"><b>glass</b></td>
-    <td align="center"><b>noor</b></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/template-classic.jpg" width="250" alt="Modèle Classic — photo + karaoké"/></td>
-    <td><img src="docs/screenshots/template-glass.jpg" width="250" alt="Modèle Glassmorphism — carte givrée + forme d'onde"/></td>
-    <td><img src="docs/screenshots/template-noor.jpg" width="250" alt="Modèle Noor — Lumière Divine dorée"/></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>photo + voile · karaoké doré<br/><i>Al-Husary</i></sub></td>
-    <td align="center"><sub>une carte givrée · forme d'onde en direct<br/><i>Al-Tunaiji · avec basmala</i></sub></td>
-    <td align="center"><sub>halo doré · chiffres dorés<br/><i>Al-Minshawi · avec basmala</i></sub></td>
-  </tr>
-</table>
-
 <sub><b>▶ Lire avec le son</b></sub>
 
 <table>
