@@ -37,7 +37,7 @@ Ne choisissez rien. Un planificateur sélectionne une sourate + un passage au ha
   </tr>
 </table>
 
-<sub><b>▶ Regardez-les jouer — avec le son</b></sub>
+<sub><b>▶ Aperçu animé — en boucle</b></sub>
 
 <table>
   <tr>
@@ -46,9 +46,9 @@ Ne choisissez rien. Un planificateur sélectionne une sourate + un passage au ha
     <td align="center"><b>noor</b></td>
   </tr>
   <tr>
-    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
-    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
-    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+    <td><img src="docs/media/demo-classic.gif" width="250" alt="classic template preview"/></td>
+    <td><img src="docs/media/demo-glass.gif" width="250" alt="glass template preview"/></td>
+    <td><img src="docs/media/demo-noor.gif" width="250" alt="noor template preview"/></td>
   </tr>
 </table>
 
