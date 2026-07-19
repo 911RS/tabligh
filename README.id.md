@@ -37,6 +37,21 @@ Tak perlu memilih apa pun. Penjadwal memilih surah + potongan ayat secara acak, 
   </tr>
 </table>
 
+<sub><b>▶ Tonton videonya — dengan suara</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>Tiga template bawaan — beralih dengan <code>TEMPLATE</code> atau melalui panel/menu. Setiap reel memvariasikan latarnya, dan <code>glass</code> mendapat gelombang suara yang unik di tiap video.</sub>
 
 </div>

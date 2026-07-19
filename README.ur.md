@@ -37,6 +37,21 @@ _"میری طرف سے پہنچا دو، خواہ ایک ہی آیت ہو۔"_ �
   </tr>
 </table>
 
+<sub><b>▶ انہیں چلتا دیکھیں — آواز کے ساتھ</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>تین بلٹ اِن ٹیمپلیٹس — <code>TEMPLATE</code> سے یا پینل/مینو میں تبدیل کریں۔ ہر ریل اپنے پس منظر کو بدلتی ہے، اور <code>glass</code> کو ہر ویڈیو کے لیے ایک منفرد ویوفارم ملتا ہے۔</sub>
 
 </div>

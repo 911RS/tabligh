@@ -37,6 +37,21 @@ Ne choisissez rien. Un planificateur sélectionne une sourate + un passage au ha
   </tr>
 </table>
 
+<sub><b>▶ Regardez-les jouer — avec le son</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>Trois modèles intégrés — changez avec <code>TEMPLATE</code> ou depuis le panneau/menu. Chaque reel varie son arrière-plan, et <code>glass</code> obtient une forme d'onde unique par vidéo.</sub>
 
 </div>

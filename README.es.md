@@ -37,6 +37,21 @@ No elijas nada. Un programador escoge una sura y un pasaje al azar, obtiene la r
   </tr>
 </table>
 
+<sub><b>▶ Míralos en acción — con sonido</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>Tres plantillas integradas — cámbialas con <code>TEMPLATE</code> o en el panel/menú. Cada reel varía su fondo, y <code>glass</code> recibe una forma de onda única por vídeo.</sub>
 
 </div>

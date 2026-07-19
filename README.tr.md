@@ -37,6 +37,21 @@ Hiçbir şey seçmeyin. Bir zamanlayıcı rastgele bir sure + pasaj seçer, tam 
   </tr>
 </table>
 
+<sub><b>▶ Oynatarak izleyin — sesli</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>Üç yerleşik şablon — <code>TEMPLATE</code> ile veya panelde/menüde değiştirin. Her reel arka planını çeşitlendirir ve <code>glass</code> her video için benzersiz bir dalga formu alır.</sub>
 
 </div>

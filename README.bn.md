@@ -37,6 +37,21 @@ _"আমার পক্ষ থেকে পৌঁছে দাও, একটি
   </tr>
 </table>
 
+<sub><b>▶ চালিয়ে দেখুন — শব্দসহ</b></sub>
+
+<table>
+  <tr>
+    <td align="center"><b>classic</b></td>
+    <td align="center"><b>glass</b></td>
+    <td align="center"><b>noor</b></td>
+  </tr>
+  <tr>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-classic.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-glass.mp4" width="250" controls muted></video></td>
+    <td><video src="https://github.com/911RS/tabligh/raw/main/docs/media/demo-noor.mp4" width="250" controls muted></video></td>
+  </tr>
+</table>
+
 <sub>তিনটি অন্তর্নির্মিত টেমপ্লেট — <code>TEMPLATE</code> দিয়ে অথবা প্যানেল/মেনুতে পরিবর্তন করুন। প্রতিটি রিল তার পটভূমি পরিবর্তন করে, এবং <code>glass</code> প্রতিটি ভিডিওতে একটি অনন্য ওয়েভফর্ম পায়।</sub>
 
 </div>
