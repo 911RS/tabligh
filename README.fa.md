@@ -37,7 +37,7 @@ _«از من برسانید، حتی یک آیه.»_ — پیامبر محمد �
   </tr>
 </table>
 
-<sub><b>▶ پیش‌نمایش زنده — تکرارشونده</b></sub>
+<sub><b>▶ با صدا پخش کنید</b></sub>
 
 <table>
   <tr>
@@ -46,9 +46,21 @@ _«از من برسانید، حتی یک آیه.»_ — پیامبر محمد �
     <td align="center"><b>noor</b></td>
   </tr>
   <tr>
-    <td><img src="docs/media/demo-classic.gif" width="250" alt="classic template preview"/></td>
-    <td><img src="docs/media/demo-glass.gif" width="250" alt="glass template preview"/></td>
-    <td><img src="docs/media/demo-noor.gif" width="250" alt="noor template preview"/></td>
+    <td>
+
+https://github.com/user-attachments/assets/1d1e5e55-ae46-41fc-b981-dc42d18fec51
+
+</td>
+    <td>
+
+https://github.com/user-attachments/assets/5f5ca08b-d181-4ff7-91ce-85c612e32dd8
+
+</td>
+    <td>
+
+https://github.com/user-attachments/assets/e6789c16-c0b7-4a0e-9f29-d2d24c2a9746
+
+</td>
   </tr>
 </table>
 
