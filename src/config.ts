@@ -73,6 +73,21 @@ export const env = {
   maxVideoSeconds: Number(process.env.MAX_VIDEO_SECONDS ?? '0'),
   // HTTP server (serve mode): port + secret for the manual /trigger endpoint.
   port: Number(process.env.PORT ?? '1998'),
+  /**
+   * Interface the control panel binds to. Loopback by default, because the
+   * panel holds the publishing credentials and, before it has been set up, can
+   * be claimed by whoever reaches it first.
+   *
+   * Node's `listen(port)` with no host binds every interface, so a plain `npm
+   * start serve` on a VPS put an unclaimed admin panel on the public internet
+   * with nothing but the firewall in front of it.
+   *
+   * Docker sets this to 0.0.0.0 — it must, or the container is unreachable —
+   * and docker-compose publishes it as 127.0.0.1:1998 on the host instead.
+   */
+  panelHost: process.env.PANEL_HOST ?? '127.0.0.1',
+  /** Allow the first-run setup to be claimed from a non-loopback address. */
+  panelAllowRemoteSetup: process.env.PANEL_ALLOW_REMOTE_SETUP === '1',
   triggerToken: process.env.TRIGGER_TOKEN ?? '',
   // Serve the control panel? Set PANEL_ENABLED=false (or `serve --no-panel`) to
   // run headless — scheduler only, no HTTP surface.

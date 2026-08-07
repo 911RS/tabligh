@@ -3,7 +3,11 @@ FROM node:22-bookworm-slim AS builder
 WORKDIR /app
 COPY package*.json ./
 ENV PUPPETEER_SKIP_DOWNLOAD=1
-RUN npm ci
+# --include=dev explicitly: platforms that let you set NODE_ENV as an
+# application variable (Coolify) inject it into the BUILD too, and a
+# NODE_ENV=production build silently skips devDependencies — so tsc and vite
+# are simply absent and the build dies with "tsc: not found".
+RUN npm ci --include=dev
 COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
@@ -15,7 +19,8 @@ RUN npm run build
 FROM node:22-bookworm-slim AS web
 WORKDIR /app/web
 COPY web/package*.json ./
-RUN npm ci
+# See the note in the builder stage — same trap, same fix.
+RUN npm ci --include=dev
 COPY web/ ./
 RUN npm run build
 

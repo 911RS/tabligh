@@ -68,6 +68,24 @@ function statusPayload() {
 const LOGIN_ATTEMPTS = new Map<string, { count: number; until: number }>();
 const MAX_FAILS = 5;
 const LOCK_MS = 15 * 60 * 1000;
+/**
+ * Is this connection from the machine itself?
+ *
+ * Deliberately reads the socket, never X-Forwarded-For: that header is
+ * attacker-controlled, and trusting it here would let anyone claim loopback by
+ * simply asking to. A reverse proxy on the same host genuinely does connect
+ * over loopback, so it still passes.
+ */
+function isLoopbackAddr(addr: string | undefined): boolean {
+  if (!addr) return false;
+  const a = addr.replace(/^::ffff:/, '');           // IPv4-mapped IPv6
+  return a === '127.0.0.1' || a === '::1' || a.startsWith('127.');
+}
+
+function isLoopbackHost(host: string): boolean {
+  return host === 'localhost' || isLoopbackAddr(host);
+}
+
 function clientIp(req: IncomingMessage): string {
   const fwd = req.headers['x-forwarded-for'];
   if (typeof fwd === 'string' && fwd) return fwd.split(',')[0].trim();
@@ -93,6 +111,18 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   // Web setup — allowed without auth ONLY while setup is incomplete.
   if (path === '/api/setup' && method === 'POST') {
     if (isSetupComplete()) return json(res, 403, { error: 'already set up' });
+    // ...and only from this machine. This endpoint sets the panel password, so
+    // whoever reaches it first owns the panel and every credential in it. A
+    // reverse proxy connects over loopback, so the normal VPS setup still
+    // works; a directly-exposed port does not.
+    if (!env.panelAllowRemoteSetup && !isLoopbackAddr(req.socket.remoteAddress)) {
+      log.warn(`panel: refused remote setup attempt from ${req.socket.remoteAddress ?? 'unknown'}`);
+      return json(res, 403, {
+        error:
+          'First-run setup must be completed from the machine running Tabligh ' +
+          '(or through a reverse proxy). Set PANEL_ALLOW_REMOTE_SETUP=1 to override.',
+      });
+    }
     const b = await readBody(req);
     if (!b.password || String(b.password).length < 4) return json(res, 400, { error: 'password too short' });
     updateSecrets({ panelPasswordHash: hashPassword(String(b.password)) });
@@ -236,6 +266,20 @@ export function startServer(): http.Server {
       json(res, 500, { error: e instanceof Error ? e.message : 'server error' });
     }
   });
-  server.listen(env.port, () => log.ok(`Control panel on :${env.port}`));
+  server.listen(env.port, env.panelHost, () => {
+    log.ok(`Control panel on ${env.panelHost}:${env.port}`);
+    if (!isLoopbackHost(env.panelHost)) {
+      log.warn(
+        `The control panel is bound to ${env.panelHost} — it is reachable from outside this machine. ` +
+          'Put it behind a reverse proxy with TLS, or set PANEL_HOST=127.0.0.1.',
+      );
+      if (!isSetupComplete()) {
+        log.warn(
+          'It has no password yet. Until you finish setup, anyone who reaches it can claim it — ' +
+            'finish setup now, or keep the port closed until you have.',
+        );
+      }
+    }
+  });
   return server;
 }
