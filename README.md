@@ -283,23 +283,22 @@ opposite: an **anonymous, render-only** site anyone can use without installing a
 what runs at **[tabligh.cc](https://tabligh.cc)**.
 
 > **The SPA is not in this repository.** It lives in
-> [`911RS/tabligh-studio`](https://github.com/911RS/tabligh-studio) and is wired in as a
-> submodule at `web/`, so cloning this repo to run the generator does not drag 3.4 MB of
-> frontend along with it. `web/` will simply be an empty directory until you ask for it:
+> [`911RS/tabligh-studio`](https://github.com/911RS/tabligh-studio), so cloning this repo to run
+> the generator does not drag 3.4 MB of frontend along with it. Nothing here imports it — the
+> API server (`src/web/`) is in this repo and builds normally; only the browser front end is
+> outside. Fetch it only if you intend to serve the studio yourself:
 >
 > ```bash
-> npm run studio:init     # git submodule update --init --recursive
+> npm run studio:fetch    # clones tabligh-studio into web/
 > ```
->
-> Nothing else needs it. The API server (`src/web/`) is in this repo and builds normally; only
-> the browser front end lives outside.
 
 ```bash
 npm run build:all         # compiles the CLI and builds the SPA into dist/web
 tabligh web               # public studio on :1999
 ```
 
-`build:all` runs `studio:init` for you, so the submodule is fetched on demand.
+`build:all` calls `studio:fetch` for you. The Docker build fetches it too, via the
+`STUDIO_TOKEN` build argument while `tabligh-studio` is private.
 
 `docker compose up -d` brings up **both** services from the same image — the private panel on
 `127.0.0.1:1998` and the public studio on `:1999`.
@@ -349,7 +348,7 @@ detail is logged or tracked.
 ### Reciter photos
 
 The reciter cards fall back to a monogram. Drop `<reciter-id>.jpg` (e.g. `husary.jpg`) into
-`web/public/reciters/` (in the `tabligh-studio` submodule) and it is picked up automatically — no code change. Ids come from
+`web/public/reciters/` (in the `tabligh-studio` repo) and it is picked up automatically — no code change. Ids come from
 `src/quran/reciters.ts`.
 
 ### Frontend development

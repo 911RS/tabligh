@@ -17,17 +17,31 @@ RUN npm run build
 # React, Tailwind) is large and has no business in the runtime image. Only the
 # built static output is copied forward.
 FROM node:22-bookworm-slim AS web
-WORKDIR /app/web
-# web/ is a submodule (911RS/tabligh-studio) — the SPA is a separate project and
-# a self-hoster cloning this repo has no use for it. Everything is copied in one
-# go rather than package.json first, because an uninitialised submodule leaves
-# an EMPTY directory and `COPY web/package*.json` would fail with "no source
-# files were specified", which says nothing about the actual cause.
-COPY web/ ./
-RUN test -f package.json || { \
-      echo "ERROR: web/ is empty — the tabligh-studio submodule was not checked out."; \
-      echo "       git submodule update --init --recursive"; \
+WORKDIR /app
+# The SPA is a separate project — 911RS/tabligh-studio — so that cloning this
+# repo to run the generator does not drag 3.4MB of frontend along with it. It is
+# fetched here rather than vendored.
+#
+# A submodule was tried first and does not survive the trip: the platform clones
+# this repo with its own credentials, which do not extend to a second private
+# repo, and the build dies on "could not read Username for https://github.com".
+# STUDIO_TOKEN is the way through while tabligh-studio is private — a token with
+# read access to it. It is only ever seen by THIS stage, which is discarded;
+# only the built dist/web is copied into the runtime image.
+ARG STUDIO_REPO=github.com/911RS/tabligh-studio.git
+ARG STUDIO_REF=main
+ARG STUDIO_TOKEN=
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN set -e; \
+    if [ -n "$STUDIO_TOKEN" ]; then auth="${STUDIO_TOKEN}@"; else auth=""; fi; \
+    git clone --depth 1 --branch "$STUDIO_REF" "https://${auth}${STUDIO_REPO}" web 2>/dev/null || { \
+      echo "ERROR: could not fetch the studio SPA from ${STUDIO_REPO}."; \
+      echo "       If that repository is private, pass a read token:"; \
+      echo "         --build-arg STUDIO_TOKEN=<github token>"; \
+      echo "       (on Coolify: add STUDIO_TOKEN as a Build Variable)"; \
       exit 1; }
+WORKDIR /app/web
 # See the note in the builder stage — same NODE_ENV trap, same fix.
 RUN npm ci --include=dev && npm run build
 
