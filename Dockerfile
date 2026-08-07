@@ -59,5 +59,11 @@ VOLUME ["/app/data"]
 # 1999 = public anonymous web studio (`web`). Which one runs is set by CMD;
 # docker-compose.yml brings both up as separate services off this one image.
 EXPOSE 1998 1999
-ENTRYPOINT ["node", "dist/cli.js"]
-CMD ["serve"]
+
+# Which of the two the container runs. `command:` in docker-compose still wins;
+# TABLIGH_CMD=web is for platforms that can only set environment variables.
+# See docker-entrypoint.sh.
+ENV TABLIGH_CMD=serve
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
