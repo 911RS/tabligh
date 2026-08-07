@@ -28,18 +28,34 @@ WORKDIR /app
 # STUDIO_TOKEN is the way through while tabligh-studio is private — a token with
 # read access to it. It is only ever seen by THIS stage, which is discarded;
 # only the built dist/web is copied into the runtime image.
-ARG STUDIO_REPO=github.com/911RS/tabligh-studio.git
+ARG STUDIO_REPO=911RS/tabligh-studio
 ARG STUDIO_REF=main
+# Either is enough, and neither is needed once the repo is public:
+#   STUDIO_DEPLOY_KEY — base64 of an SSH private key with read access. Preferred:
+#                       a deploy key is scoped to that one repo and read-only, so
+#                       it cannot reach anything else and is revoked by deleting
+#                       it from the repo's settings.
+#   STUDIO_TOKEN      — a GitHub token, for anyone who would rather use one.
+ARG STUDIO_DEPLOY_KEY=
 ARG STUDIO_TOKEN=
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates openssh-client \
     && rm -rf /var/lib/apt/lists/*
 RUN set -e; \
-    if [ -n "$STUDIO_TOKEN" ]; then auth="${STUDIO_TOKEN}@"; else auth=""; fi; \
-    git clone --depth 1 --branch "$STUDIO_REF" "https://${auth}${STUDIO_REPO}" web 2>/dev/null || { \
+    if [ -n "$STUDIO_DEPLOY_KEY" ]; then \
+      mkdir -p /root/.ssh && chmod 700 /root/.ssh; \
+      echo "$STUDIO_DEPLOY_KEY" | base64 -d > /root/.ssh/studio && chmod 600 /root/.ssh/studio; \
+      ssh-keyscan -t ed25519 github.com > /root/.ssh/known_hosts 2>/dev/null; \
+      GIT_SSH_COMMAND="ssh -i /root/.ssh/studio -o UserKnownHostsFile=/root/.ssh/known_hosts" \
+        git clone --depth 1 --branch "$STUDIO_REF" "git@github.com:${STUDIO_REPO}.git" web; \
+      rm -f /root/.ssh/studio; \
+    else \
+      if [ -n "$STUDIO_TOKEN" ]; then auth="${STUDIO_TOKEN}@"; else auth=""; fi; \
+      git clone --depth 1 --branch "$STUDIO_REF" "https://${auth}github.com/${STUDIO_REPO}.git" web 2>/dev/null; \
+    fi || { \
       echo "ERROR: could not fetch the studio SPA from ${STUDIO_REPO}."; \
-      echo "       If that repository is private, pass a read token:"; \
-      echo "         --build-arg STUDIO_TOKEN=<github token>"; \
-      echo "       (on Coolify: add STUDIO_TOKEN as a Build Variable)"; \
+      echo "       While that repository is private the build needs read access:"; \
+      echo "         --build-arg STUDIO_DEPLOY_KEY=\$(base64 -w0 path/to/deploy_key)"; \
+      echo "       (on Coolify: add it as a Build Variable)"; \
       exit 1; }
 WORKDIR /app/web
 # See the note in the builder stage — same NODE_ENV trap, same fix.

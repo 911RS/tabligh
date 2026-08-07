@@ -15,6 +15,7 @@ services:
     build:
       context: .
       args:
+        STUDIO_DEPLOY_KEY: ${STUDIO_DEPLOY_KEY:-}
         STUDIO_TOKEN: ${STUDIO_TOKEN:-}
     # or use a published image instead of build:
     # image: ghcr.io/911rs/tabligh:latest
@@ -39,7 +40,8 @@ services:
     build:
       context: .
       args:
-        # Needed only while 911RS/tabligh-studio is private. Put it in .env.
+        # Needed only while 911RS/tabligh-studio is private; put one in .env.
+        STUDIO_DEPLOY_KEY: ${STUDIO_DEPLOY_KEY:-}
         STUDIO_TOKEN: ${STUDIO_TOKEN:-}
     # image: ghcr.io/911rs/tabligh:latest
     restart: unless-stopped
