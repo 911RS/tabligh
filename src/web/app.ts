@@ -19,7 +19,7 @@ import { TEMPLATES } from '../store/store.js';
 import { log } from '../util/log.js';
 import { policy, PublicJobSchema, verifyTurnstile } from './policy.js';
 import {
-  checkAdmission, getJob, queueStats, resetOutputDir, startSweeper, submit, viewJob,
+  checkAdmission, getJob, purgeJob, queueStats, resetOutputDir, startSweeper, submit, viewJob,
 } from './queue.js';
 import { isLocale, LOCALES, renderShell, robots, sitemap } from './seo.js';
 
@@ -179,21 +179,46 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   return json(res, 404, { error: 'not found' });
 }
 
-/** Serve a finished render. Ids are unguessable, so possession of the id is
- *  the authorisation — there are no accounts to check against. */
-function download(res: ServerResponse, req: IncomingMessage, id: string, ext: string): void {
+/**
+ * Serve a finished render. Ids are unguessable, so possession of the id is the
+ * authorisation — there are no accounts to check against.
+ *
+ * `?dl=1` marks the visitor's actual download, as opposed to the result view's
+ * inline <video> streaming the same URL to play it. Only the former deletes the
+ * file afterwards: purging on any GET would have the preview delete the reel
+ * out from under the Download button next to it.
+ */
+function download(
+  res: ServerResponse,
+  req: IncomingMessage,
+  id: string,
+  ext: string,
+  save: boolean,
+): void {
   const job = getJob(id);
   const file = ext === '.jpg' ? job?.thumb : job?.file;
   if (!job || job.state !== 'done' || !file || !existsSync(file)) {
     res.writeHead(404, { 'content-type': 'text/plain' });
     return void res.end('This render has expired.');
   }
+
+  const name = `tabligh-${job.result?.surahEnglishName ?? 'reel'}-${job.result?.ayahFrom ?? ''}.mp4`;
   if (ext === '.mp4') {
-    res.setHeader(
-      'content-disposition',
-      `inline; filename="tabligh-${job.result?.surahEnglishName ?? 'reel'}-${job.result?.ayahFrom ?? ''}.mp4"`,
-    );
+    res.setHeader('content-disposition', `${save ? 'attachment' : 'inline'}; filename="${name}"`);
   }
+
+  // A range request is one slice of a download that is still in progress;
+  // deleting on it would break the very transfer that asked for it.
+  const partial = Boolean(req.headers.range);
+  if (save && ext === '.mp4' && !partial) {
+    // 'finish', not 'close'. 'close' waits for the socket itself, which under
+    // keep-alive is reaped seconds after the body has landed — long enough for
+    // the file to still be re-downloadable after we claimed to have deleted it.
+    // 'finish' fires exactly when the whole body has been flushed, and does not
+    // fire at all if the client aborts mid-transfer.
+    res.on('finish', () => void purgeJob(id));
+  }
+
   sendFile(req, res, file, 'private, max-age=600');
 }
 
@@ -226,7 +251,7 @@ export function startWebApp(): http.Server {
       if (p.startsWith('/api/')) return await api(req, res, p);
 
       const dl = /^\/d\/([A-Za-z0-9_-]{4,32})(\.mp4|\.jpg)$/.exec(p);
-      if (dl) return download(res, req, dl[1], dl[2]);
+      if (dl) return download(res, req, dl[1], dl[2], url.searchParams.get('dl') === '1');
 
       if (p === '/robots.txt') {
         res.writeHead(200, { 'content-type': MIME['.txt'] });

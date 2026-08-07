@@ -305,6 +305,22 @@ async function execute(job: WebJob): Promise<void> {
   }
 }
 
+/**
+ * Delete a finished render's files and forget the job.
+ *
+ * Called the moment the visitor's download completes, so a reel lives on this
+ * disk only for the seconds between "encoded" and "saved to your phone". The
+ * TTL sweeper below is the backstop for the ones nobody ever collects.
+ */
+export async function purgeJob(id: string): Promise<void> {
+  const job = JOBS.get(id);
+  if (!job) return;
+  JOBS.delete(id);
+  if (job.file) await rm(job.file, { force: true }).catch(() => {});
+  if (job.thumb) await rm(job.thumb, { force: true }).catch(() => {});
+  log.info(`web: purged ${id} after download`);
+}
+
 // ── Sweeper ──────────────────────────────────────────────────────────────────
 /** Drop finished jobs and their files once past the TTL. */
 async function sweep(): Promise<void> {

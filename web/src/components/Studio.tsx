@@ -264,8 +264,11 @@ export function Studio() {
                 </dl>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  {/* `?dl=1` tells the server this is the real download, not
+                      the <video> above streaming the same URL — the file is
+                      deleted from the server the moment this transfer lands. */}
                   <a
-                    href={job.downloadUrl}
+                    href={`${job.downloadUrl}?dl=1`}
                     download={`tabligh-${job.result.surahEnglishName}-${job.result.ayahFrom}.mp4`}
                     className="btn-primary inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold"
                   >
