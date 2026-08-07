@@ -9,3 +9,6 @@ work/
 
 # Persisted store (contains secrets) — never commit
 data/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

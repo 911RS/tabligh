@@ -5,6 +5,19 @@ import type { Template } from '../store/store.js';
  * project intentionally exposes no way for users to change or remove it. */
 const OUTRO_SALAWAT = 'اللّهم صلِّ وسلّم وبارك على سيدنا محمد وعلى آله وصحبه أجمعين';
 
+/**
+ * The address shown in the outro. A short domain is the only thing a viewer can
+ * realistically retype from a phone screen, so it — not the repo URL — is what
+ * the last frames carry. Self-hosters can point it at their own instance.
+ */
+const SITE_URL = (process.env.SITE_URL || 'tabligh.cc')
+  .replace(/^https?:\/\//, '')  // SITE_URL is a full origin for SEO; on screen
+  .replace(/\/+$/, '');          // a bare domain is what someone can retype.
+
+/** Outro call to action. Shown in English, then cross-faded to Arabic during
+ *  the hold, so the last thing on screen speaks to both halves of the audience. */
+const OUTRO_CTA_AR = 'أنشئ مقطعك القرآني على';
+
 export interface KaraokeWord {
   t: string;
   /** absolute ms in the concatenated audio */
@@ -74,7 +87,12 @@ function themeCss(p: SceneParams): string {
    as ayahs advance only the text inside changes — the card never moves.
    Plain, normal glassmorphism: frosted translucent panel + blur + 1px light
    border + soft shadow. No specular sheen / liquid-glass highlights. */
+/* Pulled in from the full safe area: at the default inset the card fills almost
+   the entire frame, which reads as a tinted overlay rather than a glass panel
+   sitting on a photograph. Leaving a generous margin is what makes it legible
+   as glass — and lets the background actually show. */
 .safe{border-radius:48px;overflow:hidden;
+  left:104px;right:104px;top:360px;bottom:400px;
   background:rgba(255,255,255,.11);
   -webkit-backdrop-filter:blur(26px) saturate(130%);backdrop-filter:blur(26px) saturate(130%);
   border:1px solid rgba(255,255,255,.24);
@@ -85,10 +103,10 @@ function themeCss(p: SceneParams): string {
 .body::before{display:none}
 /* Lay out the three zones inside the card, each with its own breathing room, and
    inset them from the frosted border so text never crowds the edge. */
-.header,.stage,.footer,.wave{left:56px;right:56px}
-.header{top:64px}
-.stage{top:330px;bottom:360px}
-.footer{bottom:46px}
+.header,.stage,.footer,.wave{left:40px;right:40px}
+.header{top:44px}
+.stage{top:210px;bottom:250px}
+.footer{bottom:40px}
 .artext{max-width:760px}
 .trtext{max-width:740px}
 .sname{color:#fff}
@@ -98,7 +116,7 @@ function themeCss(p: SceneParams): string {
 .w{--off:rgba(255,255,255,.5)}
 .trtext{color:rgba(255,255,255,.96);text-shadow:0 2px 14px rgba(0,0,0,.6)}
 /* Dynamic waveform (bars pulse in __setTime and fill with progress). */
-.wave{position:absolute;left:110px;right:110px;bottom:248px;height:54px;display:flex;align-items:flex-end;
+.wave{position:absolute;left:70px;right:70px;bottom:158px;height:38px;display:flex;align-items:flex-end;
   justify-content:center;gap:6px;direction:ltr}
 .wave span{flex:0 0 5px;border-radius:3px;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.35);
   transform-origin:center bottom;opacity:.3}`;
@@ -122,8 +140,8 @@ function themeCss(p: SceneParams): string {
 .basmala{color:#f4e8c6}
 .num{background:linear-gradient(150deg,#f6e6ac 0%,#d6b254 60%,#b8922f 100%);color:#2a2205;
   border:1px solid rgba(255,244,208,.7);box-shadow:0 0 26px rgba(214,178,84,.55),0 4px 18px rgba(0,0,0,.5)}
-.artext{color:#fdf7e6;filter:drop-shadow(0 0 30px rgba(214,178,84,.4)) drop-shadow(0 3px 16px rgba(0,0,0,.8))}
-.w{--off:rgba(253,247,230,.4)}
+.artext{color:#ffffff;filter:drop-shadow(0 0 26px rgba(255,255,255,.30)) drop-shadow(0 3px 16px rgba(0,0,0,.85))}
+.w{--off:rgba(255,255,255,.38)}
 .trtext{font-style:italic;color:rgba(253,247,230,.95)}
 .footer .lbl{color:rgba(232,204,128,.85);letter-spacing:3px;text-transform:uppercase;font-size:24px}
 .footer b{color:#f4e8c6}`;
@@ -191,14 +209,19 @@ export function buildScene(p: SceneParams): string {
   // Outro card: logo (only when the logo/watermark is enabled) stacked above the
   // ṣalawāt text; both centered. With the logo off, the ṣalawāt shows alone.
   // A small project credit sits subtly beneath it.
-  const ghIcon = `<svg class="gh" viewBox="0 0 16 16" width="34" height="34" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>`;
   const endCardInner =
     (p.showWatermark && p.logoDataUri ? `<img class="end-logo eo" src="${p.logoDataUri}" alt=""/>` : '') +
     `<div class="end-text eo" dir="rtl">${esc(OUTRO_SALAWAT)}</div>` +
-    `<div class="end-foot${p.projectCredit ? '' : ' compact'}" dir="ltr">
+    // The sign-off is NOT configurable. It is how a viewer who sees the reel on
+    // someone else's feed finds their way back here, and it is the only thing
+    // this project asks in return for being free — so it always renders.
+    `<div class="end-foot" dir="ltr">
        <div class="end-sep eo"></div>
-       ${p.projectCredit ? `<div class="end-project eo">Check the <b>Tabligh</b> project</div>` : ''}
-       <div class="end-credit eo">${ghIcon}<span>github.com/911RS/tabligh</span></div>
+       <div class="end-project eo">
+         <span class="cta" id="ctaEn">Create your Quran reel at</span>
+         <span class="cta" id="ctaAr" dir="rtl">${esc(OUTRO_CTA_AR)}</span>
+       </div>
+       <div class="end-credit eo"><span class="end-domain">${esc(SITE_URL)}</span></div>
      </div>`;
 
   return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8"/>
@@ -268,11 +291,19 @@ html,body{width:1080px;height:1920px;overflow:hidden;background:#05070a}
 .eo{opacity:0;will-change:opacity,transform,filter}
 .end-foot{display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:8px}
 .end-sep{width:170px;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,${p.fillColor},transparent);opacity:.8}
-.end-project{font-family:'Ubuntu';font-weight:500;font-size:36px;color:rgba(255,255,255,.78);letter-spacing:.3px}
+.end-project{font-family:'Ubuntu';font-weight:500;font-size:36px;color:rgba(255,255,255,.78);letter-spacing:.3px;
+  /* Both CTA languages occupy the SAME grid cell so the card's height never
+     shifts when they cross-fade — the domain below must not jump. */
+  display:grid;place-items:center}
+.end-project .cta{grid-area:1/1;white-space:nowrap}
+.end-project #ctaAr{font-family:'Aref';font-weight:400;font-size:1.12em;line-height:1.5}
 .end-project b{color:${p.fillColor};font-weight:700}
 .end-credit{display:flex;align-items:center;gap:14px;font-family:'Ubuntu';font-weight:500;font-size:32px;
   letter-spacing:.6px;color:rgba(255,255,255,.82);filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-.end-credit .gh{width:1.06em;height:1.06em;opacity:.9;flex:none}
+/* The domain is the outro's call to action — give it the weight to be read and
+   remembered from a phone screen at arm's length. */
+.end-domain{font-family:'Ubuntu';font-weight:700;font-size:1.5em;letter-spacing:1.2px;color:${p.fillColor};
+  text-shadow:0 0 26px ${p.fillColor}55}
 /* Compact (project text hidden): shrink the link a little. */
 .end-foot.compact .end-credit{font-size:26px;letter-spacing:.4px}
 ${themeCss(p)}
@@ -410,6 +441,14 @@ window.__setTime=function(ms){
       eos[i].style.opacity=(se*(1-ex)).toFixed(3);
       eos[i].style.transform='translateY('+((1-se)*66).toFixed(1)+'px)';
       eos[i].style.filter='blur('+((1-se)*7).toFixed(1)+'px)';
+    }
+    // Cross-fade the call to action English -> Arabic during the hold, well
+    // clear of both the entrance stagger and the final fade-out.
+    const ctaEn=document.getElementById('ctaEn'), ctaAr=document.getElementById('ctaAr');
+    if(ctaEn&&ctaAr){
+      const sw=clamp((vp-0.42)/0.12), se=sw*sw*(3-2*sw);
+      ctaEn.style.opacity=(1-se).toFixed(3);
+      ctaAr.style.opacity=se.toFixed(3);
     }
     // Only at the very END: fade the WHOLE video to black.
     veil.style.opacity=clamp((vp-0.76)/0.24).toFixed(3);

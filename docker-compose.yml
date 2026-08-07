@@ -1,18 +1,56 @@
 # Zero-config deploy: `docker compose up -d`.
-# The named volume below persists the store (settings, panel password, queue,
-# history) across restarts and rebuilds — you never create or "link" anything.
+#
+# Two services off ONE image, on purpose:
+#
+#   tabligh      — your private control panel + the auto-publish scheduler.
+#                  Holds your Buffer token and your social accounts.
+#
+#   tabligh-web  — the public, anonymous render studio (tabligh.cc). No session,
+#                  no settings writes, and structurally unable to publish.
+#
+# Splitting them means a bug or a flood on the public side cannot reach the
+# panel, and public renders cannot starve the scheduled posts.
 services:
   tabligh:
     build: .
     # or use a published image instead of build:
     # image: ghcr.io/911rs/tabligh:latest
     restart: unless-stopped
+    command: ["serve"]
     env_file:
       - .env
     ports:
-      - "1998:1998"
+      # Bound to loopback: this panel holds your publishing credentials. Reach it
+      # over an SSH tunnel, or through a reverse proxy that adds its own auth.
+      # Change to "1998:1998" only if you understand what you are exposing.
+      - "127.0.0.1:1998:1998"
     volumes:
       - tabligh-data:/app/data   # <- the store lives here, and it persists
 
+  tabligh-web:
+    build: .
+    # image: ghcr.io/911rs/tabligh:latest
+    restart: unless-stopped
+    command: ["web"]
+    env_file:
+      - .env
+    environment:
+      # Rendering is CPU-bound: one Chrome plus one ffmpeg per job. Raise this
+      # only if the host has cores to spare, or the queue will thrash.
+      WEB_CONCURRENCY: "1"
+      WEB_PORT: "1999"
+      # Behind a reverse proxy, honour X-Forwarded-For so the per-IP limits
+      # apply to the visitor rather than to the proxy.
+      WEB_TRUST_PROXY: "true"
+    ports:
+      - "1999:1999"
+    volumes:
+      # Read-only: the public app must never be able to touch the settings, the
+      # publish ledger, or the panel password.
+      - tabligh-data:/app/data:ro
+      # Finished MP4s land here and are swept after WEB_JOB_TTL_MINUTES.
+      - tabligh-web-work:/app/work
+
 volumes:
   tabligh-data:
+  tabligh-web-work:

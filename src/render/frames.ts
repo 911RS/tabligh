@@ -2,11 +2,11 @@ import { mkdir, readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
 import puppeteer, { type Browser } from 'puppeteer';
 import { env } from '../config.js';
-import { settings } from '../store/store.js';
 import { log } from '../util/log.js';
 import type { ReelJob } from '../types.js';
 import type { Background } from './background.js';
 import { buildScene, toArabicDigits, type SceneAyah } from './scene.js';
+import { defaultBrandingOptions, type BrandingOptions } from './options.js';
 
 const W = 1080;
 const H = 1920;
@@ -46,6 +46,10 @@ export interface FrameRenderOpts {
   background: Background;
   handle?: string;
   seed: number;
+  /** Per-job look. Defaults to the persisted store (admin/scheduler behaviour). */
+  branding?: BrandingOptions;
+  /** Called with 0..100 as frames are captured — drives the web app's progress bar. */
+  onProgress?: (pct: number) => void;
 }
 
 /** Render the animated scene to a JPEG frame sequence. Returns { dir, frameCount }. */
@@ -85,6 +89,8 @@ export async function renderFrames(
       ? `Ayah ${reel.ayahFrom}`
       : `Ayah ${reel.ayahFrom}–${reel.ayahTo}`;
 
+  const branding = opts.branding ?? defaultBrandingOptions();
+
   const html = buildScene({
     arefRegular,
     arefBold,
@@ -104,13 +110,13 @@ export async function renderFrames(
     outroMs: OUTRO_MS,
     logoDataUri,
     handle: opts.handle,
-    showWatermark: settings().branding.watermarkEnabled,
-    fillColor: settings().branding.textFillColor,
-    karaoke: settings().branding.karaokeEnabled,
-    particles: settings().branding.particlesEnabled,
-    bgAnimation: settings().branding.bgAnimationEnabled,
-    projectCredit: settings().branding.projectCreditEnabled,
-    template: settings().branding.template,
+    showWatermark: branding.watermarkEnabled,
+    fillColor: branding.textFillColor,
+    karaoke: branding.karaokeEnabled,
+    particles: branding.particlesEnabled,
+    bgAnimation: branding.bgAnimationEnabled,
+    projectCredit: branding.projectCreditEnabled,
+    template: branding.template,
     seed: opts.seed,
   });
 
@@ -142,6 +148,7 @@ export async function renderFrames(
         quality: 92,
       });
       const pct = Math.floor(((f + 1) / frameCount) * 100);
+      opts.onProgress?.(pct);
       if (pct >= lastPct + 20) { log.step(`Frames ${pct}%`); lastPct = pct; }
     }
   } finally {

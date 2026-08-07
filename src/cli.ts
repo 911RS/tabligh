@@ -137,6 +137,17 @@ async function main() {
       await serve({ panel: flags['no-panel'] !== true });
       break;
     }
+    case 'web': {
+      // Public, anonymous render studio. Separate process from `serve` on
+      // purpose — it has no session, no settings writes and no publish path.
+      const { startWebApp } = await import('./web/app.js');
+      const server = startWebApp();
+      const stop = () => { server.close(); process.exit(0); };
+      process.on('SIGTERM', stop);
+      process.on('SIGINT', stop);
+      await new Promise(() => {}); // run until signalled
+      break;
+    }
     case 'channels': {
       // Setup helper: list Buffer channels so you can find your TikTok channel id.
       const channels = await listChannels();
@@ -168,6 +179,7 @@ Usage:
   tabligh render --surah 112 --from 1 --to 4 [--reciter husary] [--watermark @handle] [--publish]
   tabligh random [--publish] [--mode addToQueue|shareNow|customScheduled] [--due <ISO>]
   tabligh serve  [--no-panel]  # always-on scheduler (+ control panel unless --no-panel)
+  tabligh web                  # public web studio (anonymous, render-only)
   tabligh auto                 # cron: prune → random → publish
   tabligh prune                # remove stale MinIO objects + old work dirs
   tabligh doctor               # environment & config health check
@@ -180,6 +192,7 @@ Commands:
   render    Also render the animated reel.mp4; add --publish to post it
   random    Pick a random surah + consecutive ayahs (full surah if ≤ ${'FULL_SURAH_MAX_AYAHS'})
   serve     Always-on scheduler + control panel; --no-panel for headless
+  web       Public web studio on WEB_PORT (no auth, render-only, never publishes)
   auto      One-shot cron job: prune, then render + publish a random reel
   prune     Delete stale assets (MinIO objects + local work dirs)
   doctor    Check ffmpeg, Chrome, API keys, storage, disk

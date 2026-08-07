@@ -38,6 +38,10 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.json",
+    "build:web": "npm --prefix web ci && npm --prefix web run build",
+    "build:all": "npm run build && npm run build:web",
+    "dev:web": "npm --prefix web run dev",
+    "web": "tsx src/cli.ts web",
     "start": "node dist/cli.js",
     "fetch": "tsx src/cli.ts fetch",
     "typecheck": "tsc -p tsconfig.json --noEmit"

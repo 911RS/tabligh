@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { type Job } from './config.js';
-import { settings } from './store/store.js';
 import { resolveReciter, reciterDisplayName } from './quran/reciters.js';
 import { fetchPassageText, fetchSurahMeta } from './quran/quranApi.js';
 import { downloadTimedAyahs, concatAudio, downloadBasmala } from './quran/audio.js';
@@ -10,6 +9,10 @@ import { resolveBackground } from './render/background.js';
 import { renderFrames } from './render/frames.js';
 import { assembleVideo } from './video/assemble.js';
 import type { ReelJob } from './types.js';
+import {
+  defaultContentOptions, defaultBrandingOptions,
+  type ContentOptions, type BrandingOptions,
+} from './render/options.js';
 
 /** Slug + a run tag so concurrent/repeat runs don't collide in work/. */
 function workDirFor(surah: number, from: number, to: number, reciter: string, runTag: string): string {
@@ -21,8 +24,15 @@ function workDirFor(surah: number, from: number, to: number, reciter: string, ru
  *   text  → quran API
  *   audio → everyayah per-ayah MP3s (exact timing) → concatenated track
  * Writes ir.json into the work dir for inspection. No rendering/publishing yet.
+ *
+ * `content` defaults to the persisted store, so the CLI/TUI/panel/scheduler are
+ * unchanged; the public web app passes a validated per-request set instead.
  */
-export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
+export async function buildReelJob(
+  job: Job,
+  runTag: string,
+  content: ContentOptions = defaultContentOptions(),
+): Promise<ReelJob> {
   const reciterFolder = resolveReciter(job.reciter);
 
   // Surah meta first — it drives the effective ayah range.
@@ -34,7 +44,7 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   // yields an empty passage and crashes ffmpeg with no input.
   let ayahFrom = Math.max(1, Math.min(job.ayahFrom, surahMeta.numberOfAyahs));
   let ayahTo = Math.max(ayahFrom, Math.min(job.ayahTo, surahMeta.numberOfAyahs));
-  const maxFull = settings().content.fullSurahMaxAyahs;
+  const maxFull = content.fullSurahMaxAyahs;
   if (maxFull > 0 && surahMeta.numberOfAyahs <= maxFull) {
     ayahFrom = 1;
     ayahTo = surahMeta.numberOfAyahs;
@@ -57,7 +67,7 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
 
   // Enforce the max recitation length (excluding outro): drop trailing ayahs until
   // the passage fits. This overrides the min-ayah floor — we keep at least one ayah.
-  const maxSec = settings().content.maxDurationSeconds;
+  const maxSec = content.maxDurationSeconds;
   if (maxSec > 0 && ayahs.length > 1 && ayahs[ayahs.length - 1].endMs > maxSec * 1000) {
     const kept = ayahs.filter((a) => a.endMs <= maxSec * 1000);
     const trimmed = kept.length ? kept : ayahs.slice(0, 1);
@@ -69,7 +79,7 @@ export async function buildReelJob(job: Job, runTag: string): Promise<ReelJob> {
   // Bismillah intro. Hard rule: a passage that starts at ayah 1 always opens with
   // the basmala. The 'always' setting adds it to every passage too. Skipped for
   // At-Tawbah (no basmala) and for Al-Fatiha 1:1 (which already IS the basmala).
-  const basmalaMode = settings().content.basmala;
+  const basmalaMode = content.basmala;
   const isTawbah = job.surah === 9;
   const fatihaOpening = job.surah === 1 && ayahFrom === 1;
   const includeBasmala = !isTawbah && !fatihaOpening && (ayahFrom === 1 || basmalaMode === 'always');
@@ -114,8 +124,16 @@ export interface RenderResult {
 /**
  * Stage 2 (render): data IR → background → animated frames → assembled MP4.
  * Returns the MP4 path and the background photo credit (for the caption).
+ *
+ * `branding` defaults to the persisted store (see `buildReelJob`). `onProgress`
+ * receives 0..100 while frames are captured.
  */
-export async function renderReel(job: Job, reel: ReelJob): Promise<RenderResult> {
+export async function renderReel(
+  job: Job,
+  reel: ReelJob,
+  branding: BrandingOptions = defaultBrandingOptions(),
+  onProgress?: (pct: number) => void,
+): Promise<RenderResult> {
   // Randomize each run so the background photo + particle layout vary between runs.
   const seed = Math.floor(Math.random() * 1e9);
 
@@ -127,6 +145,8 @@ export async function renderReel(job: Job, reel: ReelJob): Promise<RenderResult>
     background,
     handle: job.watermarkHandle || undefined,
     seed,
+    branding,
+    onProgress,
   });
 
   log.step('Assembling video…');

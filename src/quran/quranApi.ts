@@ -83,6 +83,29 @@ export async function fetchSurahMeta(surah: number): Promise<SurahMeta> {
   };
 }
 
+let allSurahs: SurahMeta[] | null = null;
+
+/**
+ * The full 114-surah index, for pickers. This is immutable reference data, so
+ * it is fetched once per process and cached forever; callers that need it at
+ * request time (the web app's /api/meta) get it for free after the first hit.
+ */
+export async function fetchAllSurahs(): Promise<SurahMeta[]> {
+  if (allSurahs) return allSurahs;
+  const res = await fetch(`${env.quranApiBase}/surah`);
+  if (!res.ok) throw new Error(`Quran API ${res.status} for surah index`);
+  const body = (await res.json()) as { code: number; data: (SurahMeta & { revelationType: string })[] };
+  if (body.code !== 200 || !Array.isArray(body.data)) throw new Error('Bad surah index payload');
+  allSurahs = body.data.map((d) => ({
+    number: d.number,
+    name: d.name,
+    englishName: d.englishName,
+    englishNameTranslation: d.englishNameTranslation,
+    numberOfAyahs: d.numberOfAyahs,
+  }));
+  return allSurahs;
+}
+
 /** Fetch the full passage [ayahFrom..ayahTo], in order. */
 export async function fetchPassageText(
   surah: number,

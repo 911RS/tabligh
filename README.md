@@ -274,6 +274,77 @@ from the terminal (`tabligh` menu) and don't want a web panel to secure.
 *seeds* it once — to change things later, use the panel (or `tabligh set-password` to reset
 the password). Delete `data/store.json` to re-seed from `.env`.
 
+---
+
+## 🌍 Public web studio (`tabligh web`)
+
+Everything above is *yours* — your keys, your accounts, your schedule. The web studio is the
+opposite: an **anonymous, render-only** site anyone can use without installing anything. It is
+what runs at **[tabligh.cc](https://tabligh.cc)**.
+
+```bash
+npm run build:all         # compiles the CLI and builds the SPA into dist/web
+tabligh web               # public studio on :1999
+```
+
+`docker compose up -d` brings up **both** services from the same image — the private panel on
+`127.0.0.1:1998` and the public studio on `:1999`.
+
+### What makes it safe to expose
+
+The public app is a **separate process** from the panel, and the separation is structural
+rather than a matter of checking a flag:
+
+- **It cannot publish.** `publish: false` is hard-coded at the point the job is built. There is
+  no route, parameter or setting that reaches Buffer or your social accounts.
+- **It cannot read or write your settings.** In compose, `/app/data` is mounted read-only.
+- **It has no session, no login, no cookies** — so there is nothing to steal or escalate.
+- **Every input is validated against a closed list.** The reciter must exist in the registry
+  (it becomes part of a URL), the karaoke colour must be a literal hex (it is interpolated into
+  the render page's CSS), and the local-image folder is simply not settable from the web.
+
+### Cost, and the limits that follow from it
+
+A reel is rendered **frame by frame** — roughly 25 Puppeteer screenshots per second of
+recitation, then an x264 encode. That is minutes of pinned CPU per video, and it is the real
+constraint on the whole thing. The defaults keep a small VPS usable:
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `WEB_CONCURRENCY` | `1` | Simultaneous renders. Each pins a Chrome + an ffmpeg. |
+| `WEB_MAX_AYAHS` | `10` | Longest passage. The single biggest lever on cost. |
+| `WEB_RATE_PER_HOUR` | `5` | Renders per IP per hour. |
+| `WEB_QUEUE_MAX` | `20` | Refuse new jobs rather than promise a 40-minute wait. |
+| `WEB_JOB_TTL_MINUTES` | `60` | How long a finished MP4 stays downloadable. |
+| `WEB_TRUST_PROXY` | `false` | Honour `X-Forwarded-For`. **Only** enable behind a proxy you control. |
+| `TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET` | empty | Optional Cloudflare captcha. |
+
+Nothing is stored: the job lives in memory, the file is swept after the TTL, and no request
+detail is logged or tracked.
+
+### The site itself
+
+- **Ten languages** (en · ar · fr · es · tr · id · ms · ur · fa · bn) with full RTL, matching
+  the READMEs and the terminal UI.
+- **Server-rendered SEO** — a Vite SPA ships an empty `<div>`, so the Node app rewrites the
+  built `index.html` per request: per-locale title/description/canonical, `hreflang` across all
+  ten locales, OpenGraph/Twitter cards, JSON-LD (`WebApplication`, `FAQPage`, `HowTo`), plus a
+  crawlable copy of the marketing text on first byte. `/sitemap.xml` and `/robots.txt` included.
+- **`SITE_URL`** sets the canonical origin *and* the address shown in the outro of every reel.
+
+### Reciter photos
+
+The reciter cards fall back to a monogram. Drop `<reciter-id>.jpg` (e.g. `husary.jpg`) into
+`web/public/reciters/` and it is picked up automatically — no code change. Ids come from
+`src/quran/reciters.ts`.
+
+### Frontend development
+
+```bash
+npm run web               # API on :1999
+npm run dev:web           # Vite on :5273, proxying /api and /d to :1999
+```
+
 **On Coolify / Railway / Fly:** point it at this repo. If you deploy the **`docker-compose.yml`**,
 the volume is created for you — zero manual steps. If you use the plain **Dockerfile**, the
 `VOLUME /app/data` line makes most platforms persist it automatically; on Coolify you can also

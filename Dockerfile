@@ -8,6 +8,17 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
+# ── Web stage: build the public SPA → dist/web ────────────────────────────
+# Separate stage with its own dependency layer: the frontend's toolchain (Vite,
+# React, Tailwind) is large and has no business in the runtime image. Only the
+# built static output is copied forward.
+FROM node:22-bookworm-slim AS web
+WORKDIR /app/web
+COPY web/package*.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
 # ── Runtime stage ─────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
@@ -33,6 +44,9 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
+# The built SPA. `tabligh web` serves this from dist/web; without it that
+# command still starts but answers with a "not built yet" notice.
+COPY --from=web /app/dist/web ./dist/web
 COPY assets ./assets
 COPY examples ./examples
 
@@ -41,8 +55,9 @@ COPY examples ./examples
 # no manual volume setup needed. The app creates data/store.json on first boot.
 VOLUME ["/app/data"]
 
-# Always-on: self-scheduler renders + publishes at PUBLISH_TIMES (3×/day),
-# and serves the control panel + /health on this port.
-EXPOSE 1998
+# 1998 = private control panel + scheduler (`serve`).
+# 1999 = public anonymous web studio (`web`). Which one runs is set by CMD;
+# docker-compose.yml brings both up as separate services off this one image.
+EXPOSE 1998 1999
 ENTRYPOINT ["node", "dist/cli.js"]
 CMD ["serve"]
