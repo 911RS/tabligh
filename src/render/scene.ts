@@ -126,9 +126,12 @@ function themeCss(p: SceneParams): string {
 /* ── Noor · Divine Light ───────────────────────────────────────────────── */
 /* Warm, reverent, illuminated-manuscript feel: a soft golden halo behind the
    ayah, gilded numerals, hairline gold rules. */
+/* Darkening stops are each ~10% heavier than they were; the gold stop is the
+   halo rather than the overlay and is left alone, so the centre stays warm
+   while the photograph sits back a little further behind the verse. */
 .scrim{background:
-  radial-gradient(120% 56% at 50% 42%, rgba(214,178,84,.14) 0%, rgba(6,8,12,.55) 52%, rgba(2,4,7,.92) 100%),
-  linear-gradient(180deg, rgba(2,4,7,.86) 0%, rgba(2,4,7,.38) 26%, rgba(2,4,7,.5) 60%, rgba(2,4,7,.94) 100%)}
+  radial-gradient(120% 56% at 50% 42%, rgba(214,178,84,.14) 0%, rgba(6,8,12,.61) 52%, rgba(2,4,7,.97) 100%),
+  linear-gradient(180deg, rgba(2,4,7,.95) 0%, rgba(2,4,7,.42) 26%, rgba(2,4,7,.55) 60%, rgba(2,4,7,.97) 100%)}
 .ayah{display:flex;justify-content:center;align-items:center}
 .body{position:relative;max-width:900px;padding:56px 44px}
 .body::before{content:'';position:absolute;left:50%;top:50%;width:780px;height:540px;
