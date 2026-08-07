@@ -4,7 +4,7 @@ import { AlertTriangle, Check, Download, Loader2, RotateCcw, Sparkles, Wand2 } f
 import { fill, useI18n } from '@/i18n';
 import { useMetaState } from '@/lib/hooks';
 import {
-  ApiError, createJob, formatBytes, formatDuration, pollJob,
+  ApiError, cancelJob, createJob, formatBytes, formatDuration, pollJob,
   type JobRequest, type JobView,
 } from '@/lib/api';
 import { Section, SectionHeading } from './Section';
@@ -110,6 +110,10 @@ export function Studio() {
 
   function reset() {
     abort.current?.abort();
+    // Aborting only stops OUR polling. The server still has the job, and its
+    // per-IP limit counts it — so without this the next render is refused with
+    // "You already have a reel rendering" for one the user just cancelled.
+    if (job && job.state !== 'done' && job.state !== 'failed') void cancelJob(job.id);
     setJob(null); setError(null); setBusy(false);
   }
 

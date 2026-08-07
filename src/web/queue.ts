@@ -36,6 +36,9 @@ export interface WebJob {
   stage: string;
   /** Terminal-style trace shown live in the UI. */
   logs: string[];
+  /** Set by cancelJob(). The render may still be in flight when this flips —
+   *  the flag is what stops its output being kept or its slot being counted. */
+  cancelled?: boolean;
   input: PublicJobInput;
   /** Populated on success. */
   result?: {
@@ -268,6 +271,17 @@ async function execute(job: WebJob): Promise<void> {
       thumb = dest;
     } catch { /* poster frame is a nicety, not a requirement */ }
 
+    // The visitor walked away while this was rendering. Do not resurrect the
+    // job into `done` — cancelJob already moved it to a terminal state and
+    // released their slot — and do not leave the output sitting on disk for
+    // nobody.
+    if (job.cancelled) {
+      await rm(outFile, { force: true }).catch(() => {});
+      if (thumb) await rm(thumb, { force: true }).catch(() => {});
+      log.info(`web: discarded cancelled ${job.id}`);
+      return;
+    }
+
     const { size } = await stat(outFile);
     job.file = outFile;
     job.thumb = thumb;
@@ -303,6 +317,39 @@ async function execute(job: WebJob): Promise<void> {
     // The work dir holds the raw audio and IR; the MP4 has been moved out.
     if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => {});
   }
+}
+
+/**
+ * Cancel a job on behalf of the visitor who started it.
+ *
+ * Cancelling used to be purely client-side: the browser dropped its polling and
+ * showed the form again, while the server kept the job in `running`. Since the
+ * per-IP admission check counts queued and running jobs, the next submit was
+ * refused with "You already have a reel rendering" — for a render the visitor
+ * had already abandoned, until it finished on its own.
+ *
+ * A queued job is dropped outright. One already rendering cannot be killed
+ * mid-frame, but marking it here releases the visitor's slot immediately and
+ * makes `execute` throw its output away rather than present it.
+ *
+ * Ownership is the submitting IP: there are no accounts, and a job id is not a
+ * secret worth letting a stranger cancel on.
+ */
+export function cancelJob(id: string, ip: string): boolean {
+  const job = JOBS.get(id);
+  if (!job || job.ip !== ip) return false;
+  if (job.state === 'done' || job.state === 'failed') return false;
+
+  job.cancelled = true;
+  job.state = 'failed';
+  job.error = 'cancelled';
+  job.finishedAt = Date.now();
+
+  const i = PENDING.indexOf(id);
+  if (i !== -1) PENDING.splice(i, 1);
+
+  log.info(`web: cancelled ${id}`);
+  return true;
 }
 
 /**

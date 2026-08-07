@@ -19,7 +19,7 @@ import { TEMPLATES } from '../store/store.js';
 import { log } from '../util/log.js';
 import { policy, PublicJobSchema, verifyTurnstile } from './policy.js';
 import {
-  checkAdmission, getJob, purgeJob, queueStats, resetOutputDir, startSweeper, submit, viewJob,
+  cancelJob, checkAdmission, getJob, purgeJob, queueStats, resetOutputDir, startSweeper, submit, viewJob,
 } from './queue.js';
 import { isLocale, LOCALES, renderShell, robots, sitemap } from './seo.js';
 
@@ -172,6 +172,15 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     const job = getJob(jobMatch[1]);
     if (!job) return json(res, 404, { error: 'That render has expired.' });
     return json(res, 200, viewJob(job));
+  }
+
+  // Cancelling has to reach the server: the per-IP limit counts running jobs,
+  // so a browser that merely stopped polling stayed blocked from starting
+  // another render until the abandoned one finished on its own.
+  if (jobMatch && method === 'DELETE') {
+    const ok = cancelJob(jobMatch[1], clientIp(req));
+    if (!ok) return json(res, 404, { error: 'That render has expired.' });
+    return json(res, 200, { ok: true });
   }
 
   if (path === '/api/health') return json(res, 200, { ok: true, ...queueStats() });

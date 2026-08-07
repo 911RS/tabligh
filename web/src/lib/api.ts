@@ -124,6 +124,14 @@ export const createJob = (input: JobRequest): Promise<{ id: string }> =>
 
 export const getJob = (id: string): Promise<JobView> => req<JobView>(`/api/jobs/${id}`);
 
+/** Tell the server to drop a render. Without this the per-IP limit keeps
+ *  counting an abandoned job and refuses the next one. Best-effort: the user is
+ *  already back on the form, so a failure here must not surface as an error. */
+export const cancelJob = (id: string): Promise<void> =>
+  req<{ ok: true }>(`/api/jobs/${id}`, { method: 'DELETE' })
+    .then(() => undefined)
+    .catch(() => undefined);
+
 /**
  * Poll a job to completion. Backs off while queued (nothing is changing) and
  * polls tightly while rendering so the progress bar stays honest.

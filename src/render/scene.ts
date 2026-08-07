@@ -435,23 +435,34 @@ window.__setTime=function(ms){
     // HOLD, then fade the whole card out near the very end.
     const ex=clamp((vp-0.80)/0.20);
     ec.style.opacity='1';
-    const eos=ec.querySelectorAll('.eo'), EST=0.085;
+    const eos=ec.querySelectorAll('.eo'), EST=0.05;
     for(let i=0;i<eos.length;i++){
-      const ei=clamp((vp-0.05-i*EST)/0.20), se=ei*ei*(3-2*ei); // staggered smootherstep
+      const ei=clamp((vp-0.04-i*EST)/0.14), se=ei*ei*(3-2*ei); // staggered smootherstep
       eos[i].style.opacity=(se*(1-ex)).toFixed(3);
       eos[i].style.transform='translateY('+((1-se)*66).toFixed(1)+'px)';
       eos[i].style.filter='blur('+((1-se)*7).toFixed(1)+'px)';
     }
-    // Cross-fade the call to action English -> Arabic during the hold, well
-    // clear of both the entrance stagger and the final fade-out.
+    // Cross-fade the call to action English -> Arabic.
+    //
+    // The budget below is the whole point of these numbers, so: the last .eo
+    // (the credit line) finishes entering at 0.04 + 4*EST + 0.14 = 0.38. The
+    // English then HOLDS at full opacity until 0.52, cross-fades to Arabic by
+    // 0.60, and the Arabic holds until the fade to black begins at 0.80. On a
+    // 4200ms outro that is ~590ms of English and ~840ms of Arabic, both fully
+    // opaque and still.
+    //
+    // Previously the switch began at 0.42 while the entrance ran to 0.505 with
+    // the logo enabled — so the English started fading out before it had
+    // finished fading in and was never once fully legible. Any change here has
+    // to keep the switch strictly after the last entrance completes.
     const ctaEn=document.getElementById('ctaEn'), ctaAr=document.getElementById('ctaAr');
     if(ctaEn&&ctaAr){
-      const sw=clamp((vp-0.42)/0.12), se=sw*sw*(3-2*sw);
+      const sw=clamp((vp-0.52)/0.08), se=sw*sw*(3-2*sw);
       ctaEn.style.opacity=(1-se).toFixed(3);
       ctaAr.style.opacity=se.toFixed(3);
     }
     // Only at the very END: fade the WHOLE video to black.
-    veil.style.opacity=clamp((vp-0.76)/0.24).toFixed(3);
+    veil.style.opacity=clamp((vp-0.80)/0.20).toFixed(3);
   } else {
     safe.style.opacity='1'; safe.style.transform='none';
     veil.style.opacity='0'; ec.style.opacity='0';
