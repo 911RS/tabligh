@@ -18,11 +18,18 @@ RUN npm run build
 # built static output is copied forward.
 FROM node:22-bookworm-slim AS web
 WORKDIR /app/web
-COPY web/package*.json ./
-# See the note in the builder stage — same trap, same fix.
-RUN npm ci --include=dev
+# web/ is a submodule (911RS/tabligh-studio) — the SPA is a separate project and
+# a self-hoster cloning this repo has no use for it. Everything is copied in one
+# go rather than package.json first, because an uninitialised submodule leaves
+# an EMPTY directory and `COPY web/package*.json` would fail with "no source
+# files were specified", which says nothing about the actual cause.
 COPY web/ ./
-RUN npm run build
+RUN test -f package.json || { \
+      echo "ERROR: web/ is empty — the tabligh-studio submodule was not checked out."; \
+      echo "       git submodule update --init --recursive"; \
+      exit 1; }
+# See the note in the builder stage — same NODE_ENV trap, same fix.
+RUN npm ci --include=dev && npm run build
 
 # ── Runtime stage ─────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime
