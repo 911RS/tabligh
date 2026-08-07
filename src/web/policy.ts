@@ -41,6 +41,13 @@ export const policy = {
   maxActivePerIp: num(process.env.WEB_MAX_ACTIVE_PER_IP, 1),
   /** Honour X-Forwarded-For. Only enable behind a proxy you control. */
   trustProxy: process.env.WEB_TRUST_PROXY === 'true',
+  /**
+   * How many proxies sit in front of this app. Every per-IP limit depends on
+   * getting this right, so it is a count rather than a boolean: X-Forwarded-For
+   * is a list the client can seed and each hop appends to, which means only the
+   * entries added by hops you control are trustworthy.
+   */
+  trustedProxies: num(process.env.WEB_TRUSTED_PROXIES, 1),
   /** Shown in the UI so people can star / self-host. */
   githubRepo: process.env.WEB_GITHUB_REPO || '911RS/tabligh',
   /** Optional Cloudflare Turnstile. Both empty = no captcha. */

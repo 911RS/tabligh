@@ -11,7 +11,7 @@
  */
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
-import { extname, join, normalize } from 'node:path';
+import { extname, join, normalize, sep } from 'node:path';
 import { RECITERS } from '../quran/reciters.js';
 import { fetchAllSurahs } from '../quran/quranApi.js';
 import { TRANSLATION_EDITIONS } from '../i18n.js';
@@ -64,12 +64,82 @@ async function readBody(req: IncomingMessage, limit = 16_384): Promise<unknown> 
   return JSON.parse(Buffer.concat(chunks).toString());
 }
 
+/**
+ * The address every per-IP limit is keyed on, so getting it wrong quietly
+ * disables all of them.
+ *
+ * X-Forwarded-For is `client, proxy1, proxy2…`: each hop APPENDS what it saw.
+ * The leftmost entry is therefore the least trustworthy thing in the header —
+ * it is whatever the caller decided to put there. Reading it (as this used to)
+ * means anyone can mint a fresh identity per request with `-H 'X-Forwarded-For:
+ * 1.2.3.4'` and walk straight past the rate limit, the per-IP concurrency cap
+ * and the hourly quota.
+ *
+ * The last entry was written by the hop nearest us, so counting back from the
+ * right by the number of proxies we actually run lands on the real client.
+ * Coolify's Traefik happens to overwrite the header rather than append, which
+ * masked this — but nginx's usual `$proxy_add_x_forwarded_for` appends, so the
+ * same code behind nginx is wide open.
+ */
 function clientIp(req: IncomingMessage): string {
-  if (policy.trustProxy) {
-    const fwd = req.headers['x-forwarded-for'];
-    if (typeof fwd === 'string' && fwd) return fwd.split(',')[0].trim();
+  const direct = req.socket.remoteAddress ?? 'unknown';
+  if (!policy.trustProxy) return direct;
+
+  const fwd = req.headers['x-forwarded-for'];
+  if (typeof fwd !== 'string' || !fwd) return direct;
+
+  const hops = fwd.split(',').map((s) => s.trim()).filter(Boolean);
+  if (!hops.length) return direct;
+
+  // One proxy in front → the last entry. Two → the one before it, and so on.
+  // Never past the start of the list: a short header means a caller supplied
+  // fewer hops than we expect, and the leftmost is still the safest of them.
+  const idx = Math.max(0, hops.length - Math.max(1, policy.trustedProxies));
+  return hops[idx];
+}
+
+/**
+ * Applied to every response, before any handler runs.
+ *
+ * The shell already carried nosniff and a referrer policy, but nothing else did
+ * — and nothing anywhere refused to be framed, so the studio could be embedded
+ * and clickjacked. These are set with setHeader rather than passed to
+ * writeHead so a handler cannot forget them; Node merges the two.
+ */
+function securityHeaders(req: IncomingMessage, res: ServerResponse): void {
+  res.setHeader('x-content-type-options', 'nosniff');
+  res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
+  res.setHeader('x-frame-options', 'DENY');
+  res.setHeader('cross-origin-opener-policy', 'same-origin');
+  res.setHeader('x-permitted-cross-domain-policies', 'none');
+
+  // Turnstile, when configured, runs from Cloudflare and needs to be framed.
+  const cf = policy.turnstileSiteKey ? ' https://challenges.cloudflare.com' : '';
+  res.setHeader(
+    'content-security-policy',
+    [
+      "default-src 'self'",
+      `script-src 'self'${cf}`,
+      // React sets style attributes on elements it animates; that is what
+      // 'unsafe-inline' buys here, and it does not permit inline <script>.
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data:",
+      "media-src 'self' blob:",
+      "font-src 'self'",
+      "connect-src 'self'",
+      cf ? `frame-src${cf}` : "frame-src 'none'",
+      "object-src 'none'",
+      "base-uri 'none'",
+      "form-action 'none'",
+      "frame-ancestors 'none'",
+      'upgrade-insecure-requests',
+    ].join('; '),
+  );
+
+  // Only meaningful once TLS terminates in front of this; harmless before.
+  if (req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
   }
-  return req.socket.remoteAddress ?? 'unknown';
 }
 
 /** Serve a file with Range support — browsers need 206 to scrub a <video>. */
@@ -242,9 +312,22 @@ function shell(): string | null {
 }
 
 function serveStatic(req: IncomingMessage, res: ServerResponse, pathname: string): boolean {
-  // normalize() then a prefix check defeats ../ traversal.
-  const file = normalize(join(WEB_ROOT, decodeURIComponent(pathname)));
-  if (!file.startsWith(WEB_ROOT) || !existsSync(file) || !statSync(file).isFile()) return false;
+  // normalize() then a prefix check defeats ../ traversal. The check has to be
+  // on a path SEPARATOR, not the bare string: `startsWith(WEB_ROOT)` alone also
+  // accepts a sibling directory whose name merely begins with it (dist/web-old,
+  // dist/webhooks), which is a traversal by another name.
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return false; // malformed percent-encoding is not a file we serve
+  }
+  // A NUL byte can truncate a path inside some syscalls; never let one through.
+  if (decoded.includes('\0')) return false;
+
+  const file = normalize(join(WEB_ROOT, decoded));
+  if (file !== WEB_ROOT && !file.startsWith(WEB_ROOT + sep)) return false;
+  if (!existsSync(file) || !statSync(file).isFile()) return false;
   // Vite fingerprints /assets/*; everything else stays short-lived.
   const immutable = pathname.startsWith('/assets/') || pathname.startsWith('/fonts/');
   sendFile(req, res, file, immutable ? 'public, max-age=31536000, immutable' : 'public, max-age=3600');
@@ -254,6 +337,7 @@ function serveStatic(req: IncomingMessage, res: ServerResponse, pathname: string
 export function startWebApp(): http.Server {
   const server = http.createServer(async (req, res) => {
     try {
+      securityHeaders(req, res);
       const url = new URL(req.url ?? '/', 'http://localhost');
       const p = url.pathname;
 
