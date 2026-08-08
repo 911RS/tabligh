@@ -36,6 +36,15 @@ export const policy = {
   maxDurationSeconds: num(process.env.WEB_MAX_DURATION, 90),
   /** Jobs (and their work dirs) are swept this long after finishing. */
   jobTtlMinutes: num(process.env.WEB_JOB_TTL_MINUTES, 60),
+  /**
+   * How long a reel survives after its download completes.
+   *
+   * Not zero: deleting the instant the transfer lands means a visitor who saved
+   * it to the wrong folder, or whose browser discarded it, has to render the
+   * whole thing again. A few minutes costs about 2 MB of disk — the thing that
+   * actually fills this server is Docker images, not reels.
+   */
+  downloadGraceMinutes: num(process.env.WEB_DOWNLOAD_GRACE_MINUTES, 3),
   /** Per-IP submissions per rolling hour, and concurrent jobs per IP. */
   ratePerHour: num(process.env.WEB_RATE_PER_HOUR, 5),
   maxActivePerIp: num(process.env.WEB_MAX_ACTIVE_PER_IP, 1),

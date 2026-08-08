@@ -39,6 +39,8 @@ export interface WebJob {
   /** Set by cancelJob(). The render may still be in flight when this flips —
    *  the flag is what stops its output being kept or its slot being counted. */
   cancelled?: boolean;
+  /** Armed by the first completed download; deletes the files when it fires. */
+  purgeTimer?: NodeJS.Timeout;
   input: PublicJobInput;
   /** Populated on success. */
   result?: {
@@ -363,9 +365,28 @@ export async function purgeJob(id: string): Promise<void> {
   const job = JOBS.get(id);
   if (!job) return;
   JOBS.delete(id);
+  if (job.purgeTimer) clearTimeout(job.purgeTimer);
   if (job.file) await rm(job.file, { force: true }).catch(() => {});
   if (job.thumb) await rm(job.thumb, { force: true }).catch(() => {});
-  log.info(`web: purged ${id} after download`);
+  log.info(`web: purged ${id}`);
+}
+
+/**
+ * Start the countdown to deletion once a download has landed.
+ *
+ * The grace window exists so a second click still works — saved to the wrong
+ * folder, cleared by the browser, a colleague asking for the link again. The
+ * first download arms the timer and later ones do not extend it, so the file's
+ * life is bounded from the first successful transfer rather than being kept
+ * alive indefinitely by repeated requests.
+ */
+export function schedulePurge(id: string): void {
+  const job = JOBS.get(id);
+  if (!job || job.purgeTimer) return;
+  const ms = policy.downloadGraceMinutes * 60_000;
+  job.purgeTimer = setTimeout(() => void purgeJob(id), ms);
+  job.purgeTimer.unref();
+  log.info(`web: ${id} downloaded — deleting in ${policy.downloadGraceMinutes} min`);
 }
 
 // ── Sweeper ──────────────────────────────────────────────────────────────────

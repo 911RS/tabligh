@@ -19,7 +19,7 @@ import { TEMPLATES } from '../store/store.js';
 import { log } from '../util/log.js';
 import { policy, PublicJobSchema, verifyTurnstile } from './policy.js';
 import {
-  cancelJob, checkAdmission, getJob, purgeJob, queueStats, resetOutputDir, startSweeper, submit, viewJob,
+  cancelJob, checkAdmission, getJob, queueStats, resetOutputDir, schedulePurge, startSweeper, submit, viewJob,
 } from './queue.js';
 import { isLocale, LOCALES, renderShell, robots, sitemap } from './seo.js';
 
@@ -214,6 +214,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
           maxDurationSeconds: policy.maxDurationSeconds,
           ratePerHour: policy.ratePerHour,
           jobTtlMinutes: policy.jobTtlMinutes,
+          downloadGraceMinutes: policy.downloadGraceMinutes,
         },
         queue: queueStats(),
         github: policy.githubRepo,
@@ -310,11 +311,11 @@ function download(
   const partial = Boolean(req.headers.range);
   if (save && ext === '.mp4' && !partial) {
     // 'finish', not 'close'. 'close' waits for the socket itself, which under
-    // keep-alive is reaped seconds after the body has landed — long enough for
-    // the file to still be re-downloadable after we claimed to have deleted it.
-    // 'finish' fires exactly when the whole body has been flushed, and does not
-    // fire at all if the client aborts mid-transfer.
-    res.on('finish', () => void purgeJob(id));
+    // keep-alive is reaped seconds after the body has landed. 'finish' fires
+    // exactly when the whole body has been flushed, and does not fire at all if
+    // the client aborts mid-transfer — so a download that drops at 80% leaves
+    // the file in place to be retried.
+    res.on('finish', () => schedulePurge(id));
   }
 
   sendFile(req, res, file, 'private, max-age=600');
