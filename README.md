@@ -343,7 +343,7 @@ detail is logged or tracked.
 ### Reciter photos
 
 The reciter cards fall back to a monogram. Drop `<reciter-id>.jpg` (e.g. `husary.jpg`) into
-`web/public/reciters/` (in the `tabligh-studio` repo) and it is picked up automatically — no code change. Ids come from
+`web/public/reciters/` and it is picked up automatically — no code change. Ids come from
 `src/quran/reciters.ts`.
 
 ### Frontend development
