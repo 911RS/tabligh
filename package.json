@@ -1,6 +1,6 @@
 {
   "name": "tabligh",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tabligh — auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
   "type": "module",
   "license": "MIT",
