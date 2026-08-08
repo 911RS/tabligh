@@ -12,6 +12,7 @@ _"Convey from me, even one verse."_ — Prophet Muhammad ﷺ (Bukhari)
 Pick nothing. A scheduler chooses a random surah + passage, pulls the exact recitation, renders a vertical video with word-by-word highlighting over a calm background, and posts it several times a day.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/tabligh.svg)](https://www.npmjs.com/package/tabligh)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen.svg)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6.svg)](tsconfig.json)
 
