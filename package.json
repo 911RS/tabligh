@@ -45,7 +45,8 @@
     "start": "node dist/cli.js",
     "fetch": "tsx src/cli.ts fetch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "studio:fetch": "test -d web/.git || git clone --depth 1 https://github.com/911RS/tabligh-studio.git web"
+    "studio:fetch": "test -d web/.git || git clone --depth 1 https://github.com/911RS/tabligh-studio.git web",
+    "check:web": "node scripts/check-untrusted-origin.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

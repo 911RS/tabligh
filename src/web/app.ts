@@ -107,6 +107,10 @@ function clientIp(req: IncomingMessage): string {
  * writeHead so a handler cannot forget them; Node merges the two.
  */
 function securityHeaders(req: IncomingMessage, res: ServerResponse): void {
+  // Whether TLS terminates in front of us. Two directives below are actively
+  // destructive without it.
+  const https = req.headers['x-forwarded-proto'] === 'https';
+
   res.setHeader('x-content-type-options', 'nosniff');
   res.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
   res.setHeader('x-frame-options', 'DENY');
@@ -139,12 +143,20 @@ function securityHeaders(req: IncomingMessage, res: ServerResponse): void {
       "base-uri 'none'",
       "form-action 'none'",
       "frame-ancestors 'none'",
-      'upgrade-insecure-requests',
+      // ONLY over TLS. On a plain-HTTP origin this directive rewrites every
+      // subresource request to https:// — including the app's own bundle — and
+      // if nothing is listening on 443 the page loads with no JavaScript at
+      // all. That is a blank site, not a hardened one: it took down the studio
+      // while every server-side check still passed, because curl does not obey
+      // CSP and localhost is exempt from the upgrade, so neither the header
+      // dump nor a proxied browser test could see it.
+      ...(https ? ['upgrade-insecure-requests'] : []),
     ].join('; '),
   );
 
-  // Only meaningful once TLS terminates in front of this; harmless before.
-  if (req.headers['x-forwarded-proto'] === 'https') {
+  // Likewise: promising a year of HTTPS-only from a host that has no working
+  // HTTPS would lock visitors out of it entirely.
+  if (https) {
     res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
   }
 }
