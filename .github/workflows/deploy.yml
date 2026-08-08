@@ -46,6 +46,10 @@ jobs:
     steps:
       - name: Call Coolify deploy webhook
         run: |
+          if [ -z "${COOLIFY_WEBHOOK}" ]; then
+            echo "::error::COOLIFY_WEBHOOK secret is empty — set it to the app's deploy URL"
+            exit 1
+          fi
           curl --fail-with-body --request GET "${COOLIFY_WEBHOOK}" \
             --header "Authorization: Bearer ${COOLIFY_TOKEN}"
         env:
