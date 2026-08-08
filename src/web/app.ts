@@ -120,13 +120,20 @@ function securityHeaders(req: IncomingMessage, res: ServerResponse): void {
     [
       "default-src 'self'",
       `script-src 'self'${cf}`,
+      // One of the visual components spins up a worker from a blob URL, which
+      // script-src alone refuses. Narrow enough to stay honest: a blob worker
+      // can only run code this origin already created.
+      "worker-src 'self' blob:",
       // React sets style attributes on elements it animates; that is what
       // 'unsafe-inline' buys here, and it does not permit inline <script>.
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data:",
       "media-src 'self' blob:",
       "font-src 'self'",
-      "connect-src 'self'",
+      // api.github.com is the header's star count. It fails closed (the badge
+      // hides itself), but a console full of blocked-request errors on every
+      // page load is not something to ship.
+      "connect-src 'self' https://api.github.com",
       cf ? `frame-src${cf}` : "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'none'",
@@ -357,6 +364,19 @@ export function startWebApp(): http.Server {
 
       if (serveStatic(req, res, p)) return;
 
+      // A request for a FILE that does not exist must 404, not fall through to
+      // the SPA. Falling through answered a missing /assets/index-<hash>.js with
+      // the shell — HTML, content-type text/html, status 200 — and a browser
+      // asked to execute that as a module simply fails. Since the shell was
+      // cached for five minutes while its asset hashes change every deploy, any
+      // visitor returning inside that window loaded stale HTML, requested a
+      // bundle that no longer existed, got HTML back, and sat looking at the
+      // SEO fallback on a white page with React never mounting.
+      if (/\.[a-zA-Z0-9]{1,8}$/.test(p)) {
+        res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+        return void res.end('not found');
+      }
+
       // Anything else is an SPA route. `/xx/...` selects the locale.
       const s = shell();
       if (!s) {
@@ -368,7 +388,11 @@ export function startWebApp(): http.Server {
       const html = renderShell(s, locale);
       res.writeHead(200, {
         'content-type': MIME['.html'],
-        'cache-control': 'public, max-age=300',
+        // The shell names this build's fingerprinted assets, so caching it
+        // outlives the assets it points at. `no-cache` still allows a
+        // conditional request — it just refuses to serve a deploy-old shell
+        // from memory without asking.
+        'cache-control': 'no-cache',
         'content-language': locale,
         // Belt and braces: no inline third-party anything.
         'x-content-type-options': 'nosniff',
