@@ -86,6 +86,18 @@ export const env = {
    * and docker-compose publishes it as 127.0.0.1:1998 on the host instead.
    */
   panelHost: process.env.PANEL_HOST ?? '127.0.0.1',
+  /**
+   * Panel password supplied by the operator instead of by the first visitor.
+   *
+   * Setting this is what makes exposing the panel safe: the first-run setup
+   * screen is the reason a reachable panel is dangerous, because it hands the
+   * panel to whoever loads it first. With a password already in hand there is
+   * no setup screen to claim, so the port can be opened deliberately.
+   *
+   * It does NOT make plain HTTP safe — the login still crosses the wire in the
+   * clear. Put TLS in front.
+   */
+  panelPassword: process.env.PANEL_PASSWORD ?? '',
   /** Allow the first-run setup to be claimed from a non-loopback address. */
   panelAllowRemoteSetup: process.env.PANEL_ALLOW_REMOTE_SETUP === '1',
   triggerToken: process.env.TRIGGER_TOKEN ?? '',

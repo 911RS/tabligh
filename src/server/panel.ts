@@ -7,7 +7,7 @@ import {
   settings, updateSettings, secrets, updateSecrets, isSetupComplete, markSetupComplete, listPosts,
   listQueue, addQueueItem, removeQueueItem,
 } from '../store/store.js';
-import { hashPassword, verifyPassword, signSession, verifySession, readCookie, SESSION_COOKIE } from '../auth.js';
+import { hashPassword, verifyPanelPassword, panelPasswordConfigured, signSession, verifySession, readCookie, SESSION_COOKIE } from '../auth.js';
 import { isConfigured, listChannels } from '../publish/buffer.js';
 import { runJob, isBusy, runnerStatus, findLatestVideo } from './runner.js';
 import { log, recentLogs } from '../util/log.js';
@@ -52,14 +52,14 @@ function statusPayload() {
   const sch = settings().schedule;
   const sec = secrets();
   return {
-    setupComplete: isSetupComplete(),
+    setupComplete: isSetupComplete() || panelPasswordConfigured(),
     publishConfigured: isConfigured(),
     busy: isBusy(),
     status: runnerStatus(),
     schedule: sch,
     secretsPresent: {
       pexels: !!sec.pexelsKey, unsplash: !!sec.unsplashKey, buffer: !!sec.bufferToken,
-      minio: !!sec.minio.endpoint, password: !!sec.panelPasswordHash,
+      minio: !!sec.minio.endpoint, password: !!sec.panelPasswordHash || panelPasswordConfigured(),
     },
   };
 }
@@ -110,7 +110,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
 
   // Web setup — allowed without auth ONLY while setup is incomplete.
   if (path === '/api/setup' && method === 'POST') {
-    if (isSetupComplete()) return json(res, 403, { error: 'already set up' });
+    if (isSetupComplete() || panelPasswordConfigured()) return json(res, 403, { error: 'already set up' });
     // ...and only from this machine. This endpoint sets the panel password, so
     // whoever reaches it first owns the panel and every credential in it. A
     // reverse proxy connects over loopback, so the normal VPS setup still
@@ -138,7 +138,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     const mins = loginLock(ip);
     if (mins > 0) return json(res, 429, { error: `Too many attempts — locked for ${mins} more minute(s).` });
     const b = await readBody(req);
-    if (verifyPassword(String(b.password ?? ''), secrets().panelPasswordHash)) {
+    if (verifyPanelPassword(String(b.password ?? ''))) {
       LOGIN_ATTEMPTS.delete(ip); // reset on success
       setSession(res);
       return json(res, 200, { ok: true });
@@ -273,10 +273,11 @@ export function startServer(): http.Server {
         `The control panel is bound to ${env.panelHost} — it is reachable from outside this machine. ` +
           'Put it behind a reverse proxy with TLS, or set PANEL_HOST=127.0.0.1.',
       );
-      if (!isSetupComplete()) {
+      if (!isSetupComplete() && !panelPasswordConfigured()) {
         log.warn(
-          'It has no password yet. Until you finish setup, anyone who reaches it can claim it — ' +
-            'finish setup now, or keep the port closed until you have.',
+          'It has NO PASSWORD yet, so whoever reaches it first can claim it. Either set ' +
+            'PANEL_PASSWORD in your environment, or keep the port closed until you have ' +
+            'finished setup from this machine.',
         );
       }
     }
