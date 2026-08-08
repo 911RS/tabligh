@@ -25,7 +25,9 @@ const DEFAULTS: JobRequest = {
   ayahTo: 4,
   reciter: 'husary',
   translationEdition: 'en.sahih',
-  template: 'noor',
+  // Matches the server's own default (PublicJobSchema), so a request built here
+  // and one built without a template land on the same look.
+  template: 'classic',
   karaokeEnabled: true,
   particlesEnabled: true,
   bgAnimationEnabled: true,
