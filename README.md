@@ -103,6 +103,11 @@ Quran text + translation  ──►  everyayah per-ayah audio (exact timing)
 Requirements: **Node ≥ 20** and **ffmpeg** on your PATH. (Chromium is downloaded automatically by Puppeteer.)
 
 ```bash
+# The short way — no clone, no build:
+npx tabligh                 # interactive command center
+npm i -g tabligh            # or install it properly, then: tabligh render …
+
+# Or from source:
 git clone https://github.com/911RS/tabligh.git
 cd tabligh
 npm install
@@ -282,23 +287,13 @@ Everything above is *yours* — your keys, your accounts, your schedule. The web
 opposite: an **anonymous, render-only** site anyone can use without installing anything. It is
 what runs at **[tabligh.cc](https://tabligh.cc)**.
 
-> **The SPA is not in this repository.** It lives in
-> [`911RS/tabligh-studio`](https://github.com/911RS/tabligh-studio), so cloning this repo to run
-> the generator does not drag 3.4 MB of frontend along with it. Nothing here imports it — the
-> API server (`src/web/`) is in this repo and builds normally; only the browser front end is
-> outside. Fetch it only if you intend to serve the studio yourself:
->
-> ```bash
-> npm run studio:fetch    # clones tabligh-studio into web/
-> ```
+The SPA lives in `web/`, in this repo. `npm run build:all` compiles the CLI and
+builds it into `dist/web`, which `tabligh web` then serves.
 
 ```bash
 npm run build:all         # compiles the CLI and builds the SPA into dist/web
 tabligh web               # public studio on :1999
 ```
-
-`build:all` calls `studio:fetch` for you. The Docker build fetches it too, via the
-`STUDIO_TOKEN` build argument while `tabligh-studio` is private.
 
 `docker compose up -d` brings up **both** services from the same image — the private panel on
 `127.0.0.1:1998` and the public studio on `:1999`.

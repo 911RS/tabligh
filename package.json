@@ -1,7 +1,6 @@
 {
   "name": "tabligh",
   "version": "0.1.0",
-  "private": true,
   "description": "Tabligh — auto-generate cinematic karaoke Quran reels and publish them to TikTok/Instagram/Facebook/YouTube",
   "type": "module",
   "license": "MIT",
@@ -38,15 +37,15 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsc -p tsconfig.json",
-    "build:web": "npm run studio:fetch && npm --prefix web ci && npm --prefix web run build",
+    "build:web": "npm --prefix web ci && npm --prefix web run build",
     "build:all": "npm run build && npm run build:web",
-    "dev:web": "npm run studio:fetch && npm --prefix web run dev",
+    "dev:web": "npm --prefix web run dev",
     "web": "tsx src/cli.ts web",
     "start": "node dist/cli.js",
     "fetch": "tsx src/cli.ts fetch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "studio:fetch": "test -d web/.git || git clone --depth 1 https://github.com/911RS/tabligh-studio.git web",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "prepublishOnly": "npm run build:all"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
@@ -66,5 +65,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

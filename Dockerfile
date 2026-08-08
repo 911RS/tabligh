@@ -17,49 +17,19 @@ RUN npm run build
 # React, Tailwind) is large and has no business in the runtime image. Only the
 # built static output is copied forward.
 FROM node:22-bookworm-slim AS web
-WORKDIR /app
-# The SPA is a separate project — 911RS/tabligh-studio — so that cloning this
-# repo to run the generator does not drag 3.4MB of frontend along with it. It is
-# fetched here rather than vendored.
-#
-# A submodule was tried first and does not survive the trip: the platform clones
-# this repo with its own credentials, which do not extend to a second private
-# repo, and the build dies on "could not read Username for https://github.com".
-# STUDIO_TOKEN is the way through while tabligh-studio is private — a token with
-# read access to it. It is only ever seen by THIS stage, which is discarded;
-# only the built dist/web is copied into the runtime image.
-ARG STUDIO_REPO=911RS/tabligh-studio
-ARG STUDIO_REF=main
-# Either is enough, and neither is needed once the repo is public:
-#   STUDIO_DEPLOY_KEY — base64 of an SSH private key with read access. Preferred:
-#                       a deploy key is scoped to that one repo and read-only, so
-#                       it cannot reach anything else and is revoked by deleting
-#                       it from the repo's settings.
-#   STUDIO_TOKEN      — a GitHub token, for anyone who would rather use one.
-ARG STUDIO_DEPLOY_KEY=
-ARG STUDIO_TOKEN=
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates openssh-client \
-    && rm -rf /var/lib/apt/lists/*
-RUN set -e; \
-    if [ -n "$STUDIO_DEPLOY_KEY" ]; then \
-      mkdir -p /root/.ssh && chmod 700 /root/.ssh; \
-      echo "$STUDIO_DEPLOY_KEY" | base64 -d > /root/.ssh/studio && chmod 600 /root/.ssh/studio; \
-      ssh-keyscan -t ed25519 github.com > /root/.ssh/known_hosts 2>/dev/null; \
-      GIT_SSH_COMMAND="ssh -i /root/.ssh/studio -o UserKnownHostsFile=/root/.ssh/known_hosts" \
-        git clone --depth 1 --branch "$STUDIO_REF" "git@github.com:${STUDIO_REPO}.git" web; \
-      rm -f /root/.ssh/studio; \
-    else \
-      if [ -n "$STUDIO_TOKEN" ]; then auth="${STUDIO_TOKEN}@"; else auth=""; fi; \
-      git clone --depth 1 --branch "$STUDIO_REF" "https://${auth}github.com/${STUDIO_REPO}.git" web 2>/dev/null; \
-    fi || { \
-      echo "ERROR: could not fetch the studio SPA from ${STUDIO_REPO}."; \
-      echo "       While that repository is private the build needs read access:"; \
-      echo "         --build-arg STUDIO_DEPLOY_KEY=\$(base64 -w0 path/to/deploy_key)"; \
-      echo "       (on Coolify: add it as a Build Variable)"; \
-      exit 1; }
 WORKDIR /app/web
-# See the note in the builder stage — same NODE_ENV trap, same fix.
-RUN npm ci --include=dev && npm run build
+# The SPA lives in this repo (web/). It was briefly a separate repository and
+# then a submodule; both meant the build had to authenticate to a SECOND repo,
+# which the platform's own credentials do not cover — deploys died on "could not
+# read Username for https://github.com". One repo, one clone, no build secrets.
+COPY web/package*.json ./
+# --include=dev explicitly: a platform that lets you set NODE_ENV as an
+# application variable injects it into the BUILD too, and a NODE_ENV=production
+# install skips devDependencies, so vite is absent and this fails with
+# "vite: not found".
+RUN npm ci --include=dev
+COPY web/ ./
+RUN npm run build
 
 # ── Runtime stage ─────────────────────────────────────────────────────────
 FROM node:22-bookworm-slim AS runtime

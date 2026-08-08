@@ -12,11 +12,7 @@
 # panel, and public renders cannot starve the scheduled posts.
 services:
   tabligh:
-    build:
-      context: .
-      args:
-        STUDIO_DEPLOY_KEY: ${STUDIO_DEPLOY_KEY:-}
-        STUDIO_TOKEN: ${STUDIO_TOKEN:-}
+    build: .
     # or use a published image instead of build:
     # image: ghcr.io/911rs/tabligh:latest
     restart: unless-stopped
@@ -37,12 +33,7 @@ services:
       - tabligh-data:/app/data   # <- the store lives here, and it persists
 
   tabligh-web:
-    build:
-      context: .
-      args:
-        # Needed only while 911RS/tabligh-studio is private; put one in .env.
-        STUDIO_DEPLOY_KEY: ${STUDIO_DEPLOY_KEY:-}
-        STUDIO_TOKEN: ${STUDIO_TOKEN:-}
+    build: .
     # image: ghcr.io/911rs/tabligh:latest
     restart: unless-stopped
     command: ["web"]

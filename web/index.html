@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- One theme, and it is a light one. Magic UI's components gate their dark
+     styling on `.dark`; leaving it off is what we want here. -->
+<html lang="en" dir="ltr" style="color-scheme: light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#fbf8f2" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!-- The <head> is rewritten per language by src/web/seo.ts when served from
+         the Node app; these are the dev-server defaults. -->
+    <title>Tabligh — Free Quran Reel &amp; Short Video Maker</title>
+    <meta
+      name="description"
+      content="Make cinematic Quran short videos in your browser, free and without signing up. Any surah, any reciter, word-by-word karaoke, ready for TikTok, Reels and Shorts."
+    />
+    <link rel="preload" href="/fonts/fustat-latin-200-800.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/fustat-arabic-200-800.woff2" as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
