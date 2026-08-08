@@ -12,6 +12,7 @@ import { Panel } from './Panel';
 import { PhonePreview } from './PhonePreview';
 import { ReelScreen, DEFAULT_REEL, arabicDigits, type Tpl } from './ReelScreen';
 import { ColorField, Field, Fieldset, NumberInput, Select, TextInput, ToggleChip } from './studio/Field';
+import { Turnstile, type TurnstileHandle } from './studio/Turnstile';
 import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { BorderBeam } from '@/components/ui/border-beam';
@@ -74,6 +75,10 @@ export function Studio() {
   // Whether the visitor wants to steer the background at all. Kept out of the
   // form because the server only ever sees the keywords themselves.
   const [customBg, setCustomBg] = useState(false);
+  // Empty until the widget hands one over, and empty again after each submit —
+  // a Turnstile token is single-use.
+  const [captcha, setCaptcha] = useState('');
+  const turnstile = useRef<TurnstileHandle | null>(null);
   const abort = useRef<AbortController | null>(null);
   const confetti = useRef<ConfettiRef>(null);
 
@@ -101,7 +106,9 @@ export function Studio() {
     setError(null); setBusy(true); setJob(null);
     abort.current = new AbortController();
     try {
-      const { id } = await createJob(form);
+      const { id } = await createJob({ ...form, turnstileToken: captcha });
+      // Spend the token: the next render needs a fresh one.
+      turnstile.current?.reset();
       const finished = await pollJob(id, setJob, abort.current.signal);
       if (finished.state === 'done') confetti.current?.fire({});
       else setError(finished.error ?? t('errorGeneric'));
@@ -203,11 +210,21 @@ export function Studio() {
         </p>
       )}
 
+      {meta?.turnstileSiteKey && (
+        <div className="relative flex justify-center">
+          <Turnstile
+            siteKey={meta.turnstileSiteKey}
+            onToken={setCaptcha}
+            handleRef={turnstile}
+          />
+        </div>
+      )}
+
       <div className="relative">
         <button
           type="submit"
           form="studio-form"
-          disabled={busy || !meta}
+          disabled={busy || !meta || (!!meta.turnstileSiteKey && !captcha)}
           className="btn-primary inline-flex w-full items-center justify-center gap-2.5 rounded-full px-6 py-4 text-[0.95rem] font-bold disabled:cursor-not-allowed disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Wand2 className="h-5 w-5" />}
