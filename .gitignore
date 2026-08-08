@@ -13,5 +13,3 @@ data/
 # TypeScript incremental build cache
 *.tsbuildinfo
 
-# The studio SPA lives in 911RS/tabligh-studio; `npm run studio:fetch` clones it here.
-web/
